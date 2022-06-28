@@ -1,4 +1,4 @@
-package marco
+package marco.lang
 
 data class Token(val lex: String, val type: TokenType)
 

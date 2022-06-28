@@ -14,12 +14,13 @@ repositories {
 
 val jar by tasks.getting(Jar::class) {
     manifest {
-        attributes["Main-Class"] = "marco.Main"
+        attributes["Main-Class"] = "marco.MainKt"
     }
 }
 
 dependencies {
     testImplementation(kotlin("test"))
+    implementation("org.jetbrains.kotlinx:kotlinx-cli:0.3.4")
 }
 
 tasks.test {
