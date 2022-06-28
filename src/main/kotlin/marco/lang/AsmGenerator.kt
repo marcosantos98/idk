@@ -47,9 +47,9 @@ class AsmGenerator(private val tokens: List<Token>) {
                     }
                 }
                 TokenType.STRING -> {
-                    dataSection.append("\tstr_").append(strCount).append(": db ").append(token.lex)
-                    if((token.extra as StringExtra).newLine) dataSection.append(", 10\n")
-                    else dataSection.append(", 0\n")
+                    dataSection.append("\tstr_").append(strCount).append(" db ")
+                    (token.extra as StringExtra).value.forEach { dataSection.append(it).append(", ") }
+                    dataSection.append("0\n")
                     dataSection.append("\tstr_len_").append(strCount).append(" equ $-str_").append(strCount).append("\n")
                     strCount++
                 }
