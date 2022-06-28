@@ -25,7 +25,18 @@ class Tokenizer(private val input: String) {
         cursor++
         while (!eof() && getChar() != '"') cursor++
         cursor++
-        tokens.add(Token(input.substring(start, cursor), TokenType.STRING))
+        var value = input.substring(start, cursor)
+
+        // FIXME: 28/06/22 Hack to escape newLines at the end of a string x)
+        var endsWithNewLine = false
+        if(value.substring(1, value.length-1).endsWith("\\n")) {
+            value = value.substring(0, value.length - 3) + "\""
+            endsWithNewLine = true
+        }
+
+        val extra = StringExtra(endsWithNewLine)
+
+        tokens.add(Token(value, TokenType.STRING, extra))
     }
 
     private fun parseKeywordOrIdentifierToken() {
