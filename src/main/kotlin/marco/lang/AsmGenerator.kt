@@ -53,6 +53,7 @@ class AsmGenerator(private val tokens: List<Token>) {
                     dataSection.append("\tstr_len_").append(strCount).append(" equ $-str_").append(strCount).append("\n")
                     strCount++
                 }
+                else -> println("Implement $token")
             }
         }
 
