@@ -28,7 +28,7 @@ class BasicExpressionTest {
     }
 
     @Test
-    fun variable() {
+    fun identifier() {
         val src = "lang"
         val tokenizer = Tokenizer(src)
         tokenizer.run()
@@ -76,6 +76,20 @@ class BasicExpressionTest {
         assertEquals(1, astBuilder.ast.size)
         assertEquals(
             BinaryExpressionAst(NumberExpressionAst(34.0), BinaryOp.PLUS, NumberExpressionAst(35.0)),
+            astBuilder.ast[0]
+        )
+    }
+
+    @Test
+    fun variableDeclaration() {
+        val src = "var x = 69"
+        val tokenizer = Tokenizer(src)
+        tokenizer.run()
+        val astBuilder = AstBuilder(tokenizer.tokens)
+        astBuilder.build()
+        assertEquals(1, astBuilder.ast.size)
+        assertEquals(
+            VariableDeclarionAst("x", NumberExpressionAst(69.0)),
             astBuilder.ast[0]
         )
     }
