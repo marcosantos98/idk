@@ -99,7 +99,7 @@ class Tokenizer(input: String) {
             cursor++
         }
         val value = String(inputBytes.copyOfRange(start, cursor))
-        if (keywords.contains(value)) tokens.add(Token(value, TokenType.KEYWORD))
+        if (Keywords.isValidKeyword(value)) tokens.add(Token(value, TokenType.KEYWORD))
         else tokens.add(Token(value, TokenType.IDENTIFIER))
     }
 

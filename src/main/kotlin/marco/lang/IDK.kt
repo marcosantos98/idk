@@ -4,7 +4,15 @@ data class Token(val lex: String, val type: TokenType, val extra: Any? = null)
 
 data class StringExtra(val value: ByteArray)
 
-val keywords = listOf("var", "fn", "ret")
+enum class Keywords(val lex: String) {
+    VARIABLE("var"), FUNCTION("fn"), RETURN("ret");
+
+    companion object {
+        fun isValidKeyword(lex: String): Boolean {
+            return values().any { it.lex == lex }
+        }
+    }
+}
 
 enum class TokenType {
     KEYWORD, IDENTIFIER,
