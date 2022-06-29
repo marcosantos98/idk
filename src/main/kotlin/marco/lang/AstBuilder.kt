@@ -22,6 +22,8 @@ class AstBuilder(private val tokens: List<Token>) {
                 TokenType.KEYWORD -> {
                     if (token.lex == "fn") {
                         ast.add(parseFunction())
+                    } else if (token.lex == "var") {
+                        ast.add(parseVariableDeclaration())
                     }
                 }
                 TokenType.LP -> ast.add(parseParentisExpression())
@@ -38,6 +40,14 @@ class AstBuilder(private val tokens: List<Token>) {
     }
 
     private fun getToken(): Token = tokens[currentToken]
+
+    private fun parseVariableDeclaration(): VariableDeclarionAst {
+        assertCurrentToken(TokenType.KEYWORD)
+        val identifier = assertAndGetIdentifier()
+        assertCurrentToken(TokenType.EQ_BIND)
+        val expr = parseExpression()
+        return VariableDeclarionAst(identifier, expr!!)
+    }
 
     private fun parsePrimary(): ExpressionAst? {
         return when (getToken().type) {
