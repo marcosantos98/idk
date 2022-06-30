@@ -2,6 +2,7 @@ package marco.lang.ast
 
 import marco.lang.*
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import kotlin.test.assertEquals
 
 class FunctionExpressionsTest {
@@ -77,5 +78,14 @@ class FunctionExpressionsTest {
             ),
             astBuilder.ast[0]
         )
+    }
+
+    @Test
+    fun throwWhenNoBody() {
+        val src = "fn bla()"
+        val tokenizer = Tokenizer(src)
+        tokenizer.run()
+        val astBuilder = AstBuilder(tokenizer.tokens)
+        assertThrows<IllegalStateException> { astBuilder.build() }
     }
 }
