@@ -54,7 +54,7 @@ class BasicExpressionTest {
 
     @Test
     fun function() {
-        val src = "fn add(a, b)"
+        val src = "fn add(a, b) {}"
         val tokenizer = Tokenizer(src)
         tokenizer.run()
         val astBuilder = AstBuilder(tokenizer.tokens)
