@@ -89,7 +89,7 @@ class BasicExpressionTest {
         astBuilder.build()
         assertEquals(1, astBuilder.ast.size)
         assertEquals(
-            VariableDeclarionAst("x", NumberExpressionAst(69.0)),
+            VariableDeclarationAst("x", NumberExpressionAst(69.0)),
             astBuilder.ast[0]
         )
     }

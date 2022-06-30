@@ -41,12 +41,12 @@ class AstBuilder(private val tokens: List<Token>) {
 
     private fun getToken(): Token = tokens[currentToken]
 
-    private fun parseVariableDeclaration(): VariableDeclarionAst {
+    private fun parseVariableDeclaration(): VariableDeclarationAst {
         assertCurrentToken(TokenType.KEYWORD)
         val identifier = assertAndGetIdentifier()
         assertCurrentToken(TokenType.EQ_BIND)
         val expr = parseExpression()
-        return VariableDeclarionAst(identifier, expr!!)
+        return VariableDeclarationAst(identifier, expr!!)
     }
 
     private fun parsePrimary(): ExpressionAst? {
