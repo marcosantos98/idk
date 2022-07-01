@@ -41,12 +41,12 @@ class AstBuilder(private val tokens: List<Token>) {
 
     private fun getToken(): Token = tokens[currentToken]
 
-    private fun parseVariableDeclaration(): VariableDeclarionAst {
+    private fun parseVariableDeclaration(): VariableDeclarationAst {
         assertCurrentToken(TokenType.KEYWORD)
         val identifier = assertAndGetIdentifier()
         assertCurrentToken(TokenType.EQ_BIND)
         val expr = parseExpression()
-        return VariableDeclarionAst(identifier, expr!!)
+        return VariableDeclarationAst(identifier, expr!!)
     }
 
     private fun parsePrimary(): ExpressionAst? {
@@ -123,6 +123,7 @@ class AstBuilder(private val tokens: List<Token>) {
     private fun parseFunction(): ExpressionAst {
         assertCurrentToken(TokenType.KEYWORD)
         val prototype = parsePrototype()
+        assertCurrentToken(TokenType.LCB, false)
         val expression = parseExpression()
         return FunctionExpressionAst(prototype, expression ?: BodyExpressionAst(emptyArray()))
     }
@@ -159,8 +160,8 @@ class AstBuilder(private val tokens: List<Token>) {
         } else throw IllegalStateException("Expected IDENTIFIER got ${getToken()}")
     }
 
-    private fun assertCurrentToken(token: TokenType) {
+    private fun assertCurrentToken(token: TokenType, advance: Boolean = true) {
         if (getToken().type != token) throw IllegalStateException("Expected $token got ${getToken()}")
-        else advance()
+        else if(getToken().type == token && advance) advance()
     }
 }

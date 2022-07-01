@@ -5,7 +5,7 @@ interface ExpressionAst
 data class NumberExpressionAst(val number: Double) : ExpressionAst
 data class StringExpressionAst(val string: String) : ExpressionAst
 data class VariableExpressionAst(val refName: String) : ExpressionAst
-data class VariableDeclarionAst(val refName: String, val value: ExpressionAst) : ExpressionAst
+data class VariableDeclarationAst(val refName: String, val value: ExpressionAst) : ExpressionAst
 data class BinaryExpressionAst(val left: ExpressionAst, val op: BinaryOp, val right: ExpressionAst) : ExpressionAst
 data class FunctionExpressionAst(val protoAst: PrototypeExpressionAst, val body: ExpressionAst) : ExpressionAst
 data class ReturnExpressionAst(val ast: ExpressionAst) : ExpressionAst
