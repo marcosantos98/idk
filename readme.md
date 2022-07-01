@@ -12,7 +12,7 @@ Currently, using Kotlin as the interpreter and compiler, but will change in the 
 - Basic math: +, -, *, /
 - Conditions: if
 - Loop: while
-- Memory Access: read and right
+- Memory Access: read and write
 
 ### Function declaration and call:
 - Functions require blocks even if they are empty.
