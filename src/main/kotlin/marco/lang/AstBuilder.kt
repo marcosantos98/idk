@@ -30,6 +30,9 @@ class AstBuilder(private val tokens: List<Token>) {
                         Keywords.WHILE.lex -> {
                             ast.add(parseWhileLoop())
                         }
+                        Keywords.IF.lex -> {
+                            ast.add(parseIf())
+                        }
                         else -> {
                             println("Implement keyword ${token.lex}")
                         }
@@ -42,6 +45,19 @@ class AstBuilder(private val tokens: List<Token>) {
                 }
             }
         }
+    }
+
+    private fun parseIf(): IfExpressionAst {
+        assertCurrentToken(TokenType.KEYWORD)
+        val condition = parseExpression()!!
+        assertCurrentToken(TokenType.LCB, false)
+        val body = parseBodyExpression()
+        val elseBody = if (getToken().lex == Keywords.ELSE.lex) {
+            assertCurrentToken(TokenType.KEYWORD)
+            assertCurrentToken(TokenType.LCB, false)
+            parseBodyExpression()
+        } else BodyExpressionAst(emptyArray())
+        return IfExpressionAst(condition, body, elseBody)
     }
 
     private fun advance() {
@@ -62,12 +78,18 @@ class AstBuilder(private val tokens: List<Token>) {
     private fun parsePrimary(): ExpressionAst? {
         return when (getToken().type) {
             TokenType.KEYWORD -> {
-                if(getToken().lex == Keywords.RETURN.lex) {
-                    return parseReturn()
-                } else if(getToken().lex == Keywords.WHILE.lex) {
-                    return parseWhileLoop()
+                when (getToken().lex) {
+                    Keywords.RETURN.lex -> {
+                        return parseReturn()
+                    }
+                    Keywords.WHILE.lex -> {
+                        return parseWhileLoop()
+                    }
+                    Keywords.IF.lex -> {
+                        return parseIf()
+                    }
+                    else -> return null
                 }
-                return null
             }
             TokenType.IDENTIFIER -> parseIdentifier()
             TokenType.LP -> parseParentisExpression()
@@ -104,7 +126,7 @@ class AstBuilder(private val tokens: List<Token>) {
     private fun parseBodyExpression(): BodyExpressionAst {
         assertCurrentToken(TokenType.LCB)
         val statements = mutableListOf<ExpressionAst>()
-        while(getToken().type != TokenType.RCB) {
+        while (getToken().type != TokenType.RCB) {
             statements.add(parseExpression()!!)
         }
         assertCurrentToken(TokenType.RCB)
@@ -136,7 +158,7 @@ class AstBuilder(private val tokens: List<Token>) {
         assertCurrentToken(TokenType.LP)
         val args = mutableListOf<String>()
         while (getToken().type == TokenType.IDENTIFIER || getToken().type == TokenType.COMMA) {
-            if(getToken().type == TokenType.COMMA){
+            if (getToken().type == TokenType.COMMA) {
                 advance()
                 continue
             }
@@ -191,6 +213,6 @@ class AstBuilder(private val tokens: List<Token>) {
 
     private fun assertCurrentToken(token: TokenType, advance: Boolean = true) {
         if (getToken().type != token) throw IllegalStateException("Expected $token got ${getToken()}")
-        else if(getToken().type == token && advance) advance()
+        else if (getToken().type == token && advance) advance()
     }
 }

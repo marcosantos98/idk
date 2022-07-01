@@ -2,6 +2,7 @@ package marco.lang
 
 interface ExpressionAst
 
+data class IfExpressionAst(val condition: ExpressionAst, val body: ExpressionAst, val elseBody: BodyExpressionAst): ExpressionAst
 data class WhileExpressionAst(val condition: ExpressionAst, val body: BodyExpressionAst): ExpressionAst
 data class NumberExpressionAst(val number: Double) : ExpressionAst
 data class StringExpressionAst(val string: String) : ExpressionAst
