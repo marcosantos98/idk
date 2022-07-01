@@ -77,6 +77,11 @@ class AstBuilder(private val tokens: List<Token>) {
                 advance()
                 return NumberExpressionAst(value)
             }
+            TokenType.STRING -> {
+                val value = getToken().lex
+                advance()
+                return StringExpressionAst(value)
+            }
             else -> null
         }
     }
