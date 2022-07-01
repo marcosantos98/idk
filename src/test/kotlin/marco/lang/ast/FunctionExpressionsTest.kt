@@ -59,7 +59,7 @@ class FunctionExpressionsTest {
     fun withReturn() {
         val src = """
             fn favoriteNumber() {
-                ret 69
+                ret 69;
             }
         """.trimIndent()
         val tokenizer = Tokenizer(src)

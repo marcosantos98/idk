@@ -20,7 +20,7 @@ enum class TokenType {
     STRING, NUMBER,
     NEQ, EQ, LT, GT, LTEQ, GTEQ,
     LP, RP, LCB, RCB,
-    COMMA,
+    COMMA, SEMI_COLON,
     PLUS, MINUS, MUL, DIV, MOD,
     EOF
 }

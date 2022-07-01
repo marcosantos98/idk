@@ -33,6 +33,7 @@ class Tokenizer(input: String) {
                         cursor++
                     }
                 }
+                ';'.code.toByte() -> addToken(Token(";", TokenType.SEMI_COLON))
                 '='.code.toByte() -> {
                     if(inputBytes[cursor+1] == '='.code.toByte()) {
                         addToken(Token("==", TokenType.EQ))

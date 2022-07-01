@@ -40,7 +40,7 @@ class BasicExpressionTest {
 
     @Test
     fun call() {
-        val src = "add(34, 35)"
+        val src = "add(34, 35);"
         val tokenizer = Tokenizer(src)
         tokenizer.run()
         val astBuilder = AstBuilder(tokenizer.tokens)
@@ -82,7 +82,7 @@ class BasicExpressionTest {
 
     @Test
     fun variableDeclaration() {
-        val src = "var x = 69"
+        val src = "var x = 69;"
         val tokenizer = Tokenizer(src)
         tokenizer.run()
         val astBuilder = AstBuilder(tokenizer.tokens)
