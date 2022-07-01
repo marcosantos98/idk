@@ -46,6 +46,7 @@ class AstBuilder(private val tokens: List<Token>) {
         val identifier = assertAndGetIdentifier()
         assertCurrentToken(TokenType.EQ_BIND)
         val expr = parseExpression()
+        assertCurrentToken(TokenType.SEMI_COLON)
         return VariableDeclarationAst(identifier, expr!!)
     }
 
@@ -76,7 +77,9 @@ class AstBuilder(private val tokens: List<Token>) {
 
     private fun parseReturn(): ExpressionAst {
         assertCurrentToken(TokenType.KEYWORD)
-        return ReturnExpressionAst(parseExpression()!!)
+        val retExpression = parseExpression()!!
+        assertCurrentToken(TokenType.SEMI_COLON)
+        return ReturnExpressionAst(retExpression)
     }
 
     private fun parseBodyExpression(): BodyExpressionAst {
@@ -154,6 +157,8 @@ class AstBuilder(private val tokens: List<Token>) {
             assertCurrentToken(TokenType.COMMA)
         }
         assertCurrentToken(TokenType.RP)
+        // FIXME: 01/07/22 This should change when calling members functions.
+        assertCurrentToken(TokenType.SEMI_COLON)
         return CallExpressionAst(identifier, args.toTypedArray())
     }
 
