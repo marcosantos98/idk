@@ -20,10 +20,19 @@ class AstBuilder(private val tokens: List<Token>) {
                 }
                 TokenType.IDENTIFIER -> ast.add(parseIdentifier())
                 TokenType.KEYWORD -> {
-                    if (token.lex == Keywords.FUNCTION.lex) {
-                        ast.add(parseFunction())
-                    } else if (token.lex == Keywords.VARIABLE.lex) {
-                        ast.add(parseVariableDeclaration())
+                    when (token.lex) {
+                        Keywords.FUNCTION.lex -> {
+                            ast.add(parseFunction())
+                        }
+                        Keywords.VARIABLE.lex -> {
+                            ast.add(parseVariableDeclaration())
+                        }
+                        Keywords.WHILE.lex -> {
+                            ast.add(parseWhileLoop())
+                        }
+                        else -> {
+                            println("Implement keyword ${token.lex}")
+                        }
                     }
                 }
                 TokenType.LP -> ast.add(parseParentisExpression())
@@ -55,6 +64,8 @@ class AstBuilder(private val tokens: List<Token>) {
             TokenType.KEYWORD -> {
                 if(getToken().lex == Keywords.RETURN.lex) {
                     return parseReturn()
+                } else if(getToken().lex == Keywords.WHILE.lex) {
+                    return parseWhileLoop()
                 }
                 return null
             }
@@ -75,6 +86,14 @@ class AstBuilder(private val tokens: List<Token>) {
         val retExpression = parseExpression()!!
         assertCurrentToken(TokenType.SEMI_COLON)
         return ReturnExpressionAst(retExpression)
+    }
+
+    private fun parseWhileLoop(): WhileExpressionAst {
+        assertCurrentToken(TokenType.KEYWORD)
+        val condition = parseExpression()!!
+        assertCurrentToken(TokenType.LCB, false)
+        val body = parseBodyExpression()
+        return WhileExpressionAst(condition, body)
     }
 
     private fun parseBodyExpression(): BodyExpressionAst {
