@@ -14,7 +14,9 @@ fun main(args: Array<String>) {
     val input by argParser.argument(ArgType.String, description = "Input source file")
     //val output by argParser.option(ArgType.String, shortName = "o", description = "Output asm file")
     //val printAsm by argParser.option(ArgType.Boolean, shortName = "p", description = "Print generated asm").default(false)
-    val debug by argParser.option(ArgType.Boolean, shortName = "d", description = "Only prints the tokens")
+    val debugTokens by argParser.option(ArgType.Boolean, shortName = "pt", description = "Only prints the tokens")
+        .default(false)
+    val debugAst by argParser.option(ArgType.Boolean, shortName = "pa", description = "Only prints the tokens")
         .default(false)
     argParser.parse(args)
 
@@ -22,11 +24,17 @@ fun main(args: Array<String>) {
 
     val tokenizer = Tokenizer(sourceCode)
     tokenizer.run()
+
+
+    if (debugTokens) {
+        tokenizer.tokens.forEach { println(it) }
+        return
+    }
+
     val astBuilder = AstBuilder(tokenizer.tokens)
     astBuilder.build()
 
-    if (debug) {
-        tokenizer.tokens.forEach { println(it) }
+    if(debugAst) {
         astBuilder.ast.forEach { println(it) }
         return
     }
