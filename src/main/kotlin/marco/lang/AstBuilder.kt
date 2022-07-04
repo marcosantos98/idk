@@ -8,44 +8,15 @@ class AstBuilder(private val tokens: List<Token>) {
 
     fun build() {
         while (currentToken < tokens.size - 1) {
-            val token = getToken()
-            when (token.type) {
-                TokenType.NUMBER -> {
-                    ast.add(parseExpression()!!)
-                    advance()
-                }
-                TokenType.STRING -> {
-                    ast.add(StringExpressionAst(token.lex))
-                    advance()
-                }
-                TokenType.IDENTIFIER -> ast.add(parseIdentifier())
-                TokenType.KEYWORD -> {
-                    when (token.lex) {
-                        Keywords.FUNCTION.lex -> {
-                            ast.add(parseFunction())
-                        }
-                        Keywords.VARIABLE.lex -> {
-                            ast.add(parseVariableDeclaration())
-                        }
-                        Keywords.WHILE.lex -> {
-                            ast.add(parseWhileLoop())
-                        }
-                        Keywords.IF.lex -> {
-                            ast.add(parseIf())
-                        }
-                        else -> {
-                            println("Implement keyword ${token.lex}")
-                        }
-                    }
-                }
-                TokenType.LP -> ast.add(parseParentisExpression())
-                else -> {
-                    println("Implement: $token")
-                    advance()
-                }
-            }
+            ast.add(parseExpression()!!)
         }
     }
+
+    private fun advance() {
+        if (currentToken + 1 < tokens.size) currentToken++
+    }
+
+    private fun getToken(): Token = tokens[currentToken]
 
     private fun parseIf(): IfExpressionAst {
         assertCurrentToken(TokenType.KEYWORD)
@@ -60,12 +31,6 @@ class AstBuilder(private val tokens: List<Token>) {
         return IfExpressionAst(condition, body, elseBody)
     }
 
-    private fun advance() {
-        if (currentToken + 1 < tokens.size) currentToken++
-    }
-
-    private fun getToken(): Token = tokens[currentToken]
-
     private fun parseVariableDeclaration(): VariableDeclarationAst {
         assertCurrentToken(TokenType.KEYWORD)
         val identifier = assertAndGetIdentifier()
@@ -79,15 +44,11 @@ class AstBuilder(private val tokens: List<Token>) {
         return when (getToken().type) {
             TokenType.KEYWORD -> {
                 when (getToken().lex) {
-                    Keywords.RETURN.lex -> {
-                        return parseReturn()
-                    }
-                    Keywords.WHILE.lex -> {
-                        return parseWhileLoop()
-                    }
-                    Keywords.IF.lex -> {
-                        return parseIf()
-                    }
+                    Keywords.RETURN.lex -> return parseReturn()
+                    Keywords.WHILE.lex -> return parseWhileLoop()
+                    Keywords.IF.lex -> return parseIf()
+                    Keywords.FUNCTION.lex -> return parseFunction()
+                    Keywords.VARIABLE.lex -> return parseVariableDeclaration()
                     else -> return null
                 }
             }
