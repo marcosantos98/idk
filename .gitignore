@@ -3,3 +3,4 @@ build
 tests/*.o
 tests/*.asm
 .idea
+cpp/build
