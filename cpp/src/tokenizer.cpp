@@ -30,6 +30,10 @@ void Tokenizer::run()
             {
                 parse_number();
             }
+            else if (isalpha(m_input[m_cursor]))
+            {
+                parse_identifier();
+            }
             else
             {
                 printf("Unknown char: %c\n", m_input[m_cursor]);
@@ -72,6 +76,14 @@ void Tokenizer::parse_slash()
     }
 }
 
+void Tokenizer::parse_identifier()
+{
+    uint64_t cursor_start = m_cursor;
+    while (!is_eof() && m_input[m_cursor] != ' ')
+        m_cursor++;
+    m_tokens.emplace_back(make_token(m_input.substr(cursor_start, m_cursor), TokenType::IDENTIFIER));
+}
+
 Token Tokenizer::make_token(std::string lex_value, TokenType type)
 {
     return {lex_value, type};
@@ -92,6 +104,8 @@ std::string Tokenizer::tokentype_to_token(TokenType type)
         return "TokenType::OPERATOR";
     case TokenType::STRING:
         return "TokenType::STRING";
+    case TokenType::IDENTIFIER:
+        return "TokenType::IDENTIFIER";
     default:
         printf("Unknown token.\n");
         exit(1);

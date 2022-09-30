@@ -5,6 +5,7 @@
 
 enum class TokenType
 {
+    IDENTIFIER,
     OPERATOR,
     NUMBER,
     STRING
@@ -38,6 +39,7 @@ private:
     void parse_number();
     void parse_string();
     void parse_slash();
+    void parse_identifier();
     Token make_token(std::string, TokenType);
     std::string tokentype_to_token(TokenType);
     bool is_eof();
