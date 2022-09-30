@@ -82,7 +82,7 @@ void Tokenizer::parse_identifier()
     uint64_t cursor_start = m_cursor;
     while (!is_eof() && m_input[m_cursor] != ' ')
         m_cursor++;
-    m_tokens.emplace_back(make_token(m_input.substr(cursor_start, m_cursor), TokenType::IDENTIFIER));
+    m_tokens.emplace_back(make_token(m_input.substr(cursor_start, m_cursor - cursor_start), TokenType::IDENTIFIER));
 }
 
 Token Tokenizer::make_token(std::string lex_value, TokenType type)
