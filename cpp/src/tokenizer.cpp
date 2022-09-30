@@ -16,6 +16,7 @@ void Tokenizer::run()
         case '-':
         case '%':
         case '*':
+        case '=':
             m_tokens.emplace_back(make_token({m_input[m_cursor]}, TokenType::OPERATOR));
             m_cursor++;
             break;
