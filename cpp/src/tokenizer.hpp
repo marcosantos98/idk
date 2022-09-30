@@ -5,7 +5,7 @@
 
 enum class TokenType
 {
-    PLUS,
+    OPERATOR,
     NUMBER,
     STRING
 };
@@ -37,7 +37,7 @@ private:
 
     void parse_number();
     void parse_string();
-    void parse_comment();
+    void parse_slash();
     Token make_token(std::string, TokenType);
     std::string tokentype_to_token(TokenType);
     bool is_eof();

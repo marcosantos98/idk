@@ -13,14 +13,17 @@ void Tokenizer::run()
             m_cursor++;
             break;
         case '+':
-            m_tokens.emplace_back(make_token("+", TokenType::PLUS));
+        case '-':
+        case '%':
+        case '*':
+            m_tokens.emplace_back(make_token({m_input[m_cursor]}, TokenType::OPERATOR));
             m_cursor++;
+            break;
+        case '/':
+            parse_slash();
             break;
         case '"':
             parse_string();
-            break;
-        case '/':
-            parse_comment();
             break;
         default:
             if (isdigit(m_input[m_cursor]))
@@ -47,18 +50,26 @@ void Tokenizer::parse_number()
 
 void Tokenizer::parse_string()
 {
-    m_cursor++; //Advance "
+    m_cursor++; // Advance "
     size_t cursor_start = m_cursor;
-    while(!is_eof() && m_input[m_cursor] != '"')
+    while (!is_eof() && m_input[m_cursor] != '"')
         m_cursor++;
     m_tokens.emplace_back(make_token(m_input.substr(cursor_start, m_cursor - cursor_start), TokenType::STRING));
-    m_cursor++; //Advance "
+    m_cursor++; // Advance "
 }
 
-void Tokenizer::parse_comment()
+void Tokenizer::parse_slash()
 {
-    while (!is_eof() && m_input[m_cursor] != '\n')
+    if (m_input[m_cursor + 1] == '/') // Is a comment
+    {
+        while (!is_eof() && m_input[m_cursor] != '\n')
+            m_cursor++;
+    }
+    else
+    {
+        m_tokens.emplace_back(make_token({m_input[m_cursor]}, TokenType::OPERATOR));
         m_cursor++;
+    }
 }
 
 Token Tokenizer::make_token(std::string lex_value, TokenType type)
@@ -73,16 +84,17 @@ void Tokenizer::print_token(Token token)
 
 std::string Tokenizer::tokentype_to_token(TokenType type)
 {
-    switch(type) {
-        case TokenType::NUMBER:
-            return "TokenType::NUMBER";
-        case TokenType::PLUS:
-            return "TokenType::PLUS";
-        case TokenType::STRING:
-            return "TokenType::STRING";
-        default:
-            printf("Unknown token.\n");
-            exit(1);
+    switch (type)
+    {
+    case TokenType::NUMBER:
+        return "TokenType::NUMBER";
+    case TokenType::OPERATOR:
+        return "TokenType::OPERATOR";
+    case TokenType::STRING:
+        return "TokenType::STRING";
+    default:
+        printf("Unknown token.\n");
+        exit(1);
     }
 }
 
