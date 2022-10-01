@@ -5,6 +5,7 @@
 #include <sstream>
 
 #include "tokenizer.hpp"
+#include "ast.hpp"
 
 std::string read_file_source(const char *file_path)
 {
@@ -19,11 +20,11 @@ std::string read_file_source(const char *file_path)
     return str;
 }
 
-int main(int argc, char** args)
+int main(int argc, char **args)
 {
     (void)argc;
-    (void)*args++; //advance program name
-    const char* path = *args;
+    (void)*args++; // advance program name
+    const char *path = *args;
 
     printf("Loading %s\n", path);
 
@@ -33,5 +34,9 @@ int main(int argc, char** args)
     for (auto token : tokenizer.get_tokens())
         tokenizer.print_token(token);
 
+    ASTBuilder ast_builder(tokenizer.get_tokens());
+    ast_builder.run();
+    ast_builder.print_ast();
+    
     return 0;
 }

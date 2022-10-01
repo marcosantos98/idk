@@ -10,4 +10,5 @@ include_directories(./src)
 add_executable(idk
     main.cpp
     ./src/tokenizer.cpp
+    ./src/ast.cpp
     )

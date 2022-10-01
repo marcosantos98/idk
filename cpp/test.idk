@@ -1,7 +1,2 @@
-"Hello World"
-10
-+
-// This is comment
--
-*
-/
+String hello = "Hello World" //String variable
+int n = 34 + 35 //BinExpression variable
