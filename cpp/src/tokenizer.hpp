@@ -8,7 +8,8 @@ enum class TokenType
     IDENTIFIER,
     OPERATOR,
     NUMBER,
-    STRING
+    STRING,
+    END_OF_FILE
 };
 
 struct Token

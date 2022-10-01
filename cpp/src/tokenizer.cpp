@@ -43,6 +43,7 @@ void Tokenizer::run()
             break;
         }
     }
+    m_tokens.emplace_back(make_token("EOF", TokenType::END_OF_FILE));
 }
 
 void Tokenizer::parse_number()
@@ -107,6 +108,8 @@ std::string Tokenizer::tokentype_to_token(TokenType type)
         return "TokenType::STRING";
     case TokenType::IDENTIFIER:
         return "TokenType::IDENTIFIER";
+        case TokenType::END_OF_FILE:
+        return "TokenType::END_OF_FILE";
     default:
         printf("Unknown token.\n");
         exit(1);
