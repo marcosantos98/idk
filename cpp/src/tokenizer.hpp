@@ -13,6 +13,7 @@ enum class TokenType
     RP,
     LCP,
     RCP,
+    COMMA,
     END_OF_FILE
 };
 

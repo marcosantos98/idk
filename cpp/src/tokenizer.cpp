@@ -31,6 +31,9 @@ void Tokenizer::run()
         case '}':
             m_tokens.emplace_back(with_current_token(TokenType::RCP));
             break;
+        case ',':
+            m_tokens.emplace_back(with_current_token(TokenType::COMMA));
+            break;
         case '/':
             parse_slash();
             break;
