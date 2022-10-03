@@ -31,12 +31,12 @@ int main(int argc, char **args)
     Tokenizer tokenizer(read_file_source(path));
     tokenizer.run();
 
-    for (auto token : tokenizer.get_tokens())
-        tokenizer.print_token(token);
+    // for (auto token : tokenizer.get_tokens())
+    //     tokenizer.print_token(token);
 
     ASTBuilder ast_builder(tokenizer.get_tokens());
     ast_builder.run();
-    ast_builder.print_ast();
+    printf("%s\n", ast_builder.to_json_str().c_str());
     
     return 0;
 }

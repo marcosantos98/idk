@@ -11,4 +11,5 @@ add_executable(idk
     main.cpp
     ./src/tokenizer.cpp
     ./src/ast.cpp
+    ./src/json.hpp
     )

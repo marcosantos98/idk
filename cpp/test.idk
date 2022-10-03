@@ -1,2 +1,9 @@
-String hello = "Hello World" //String variable
-int n = 34 + 35 //BinExpression variable
+public static class Main {
+
+    String msg = "Hello World"
+    int n = 34
+
+    public void main(int argc, String argv) {
+        int j = 10
+    }
+}
