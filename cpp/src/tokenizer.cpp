@@ -81,7 +81,7 @@ void Tokenizer::parse_slash()
 void Tokenizer::parse_identifier()
 {
     uint64_t cursor_start = m_cursor;
-    while (!is_eof() && m_input[m_cursor] != ' ')
+    while (!is_eof() && isalpha(m_input[m_cursor]))
         m_cursor++;
     m_tokens.emplace_back(make_token(m_input.substr(cursor_start, m_cursor - cursor_start), TokenType::IDENTIFIER));
 }
