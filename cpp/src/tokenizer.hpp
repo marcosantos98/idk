@@ -9,6 +9,8 @@ enum class TokenType
     OPERATOR,
     NUMBER,
     STRING,
+    LP,
+    RP,
     END_OF_FILE
 };
 

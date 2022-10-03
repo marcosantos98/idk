@@ -17,8 +17,13 @@ void Tokenizer::run()
         case '%':
         case '*':
         case '=':
-            m_tokens.emplace_back(make_token({m_input[m_cursor]}, TokenType::OPERATOR));
-            m_cursor++;
+            m_tokens.emplace_back(with_current_token(TokenType::OPERATOR));
+            break;
+        case '(':
+            m_tokens.emplace_back(with_current_token(TokenType::LP));
+            break;
+        case ')':
+            m_tokens.emplace_back(with_current_token(TokenType::RP));
             break;
         case '/':
             parse_slash();
@@ -115,7 +120,11 @@ std::string Tokenizer::tokentype_to_token(TokenType type)
         return "TokenType::STRING";
     case TokenType::IDENTIFIER:
         return "TokenType::IDENTIFIER";
-        case TokenType::END_OF_FILE:
+    case TokenType::LP:
+        return "TokenType::LP";
+    case TokenType::RP:
+        return "TokenType::RP";
+    case TokenType::END_OF_FILE:
         return "TokenType::END_OF_FILE";
     default:
         printf("Unknown token.\n");
