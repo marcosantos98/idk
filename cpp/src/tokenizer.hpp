@@ -11,6 +11,8 @@ enum class TokenType
     STRING,
     LP,
     RP,
+    LCP,
+    RCP,
     END_OF_FILE
 };
 

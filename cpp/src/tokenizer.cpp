@@ -25,6 +25,12 @@ void Tokenizer::run()
         case ')':
             m_tokens.emplace_back(with_current_token(TokenType::RP));
             break;
+        case '{':
+            m_tokens.emplace_back(with_current_token(TokenType::LCP));
+            break;
+        case '}':
+            m_tokens.emplace_back(with_current_token(TokenType::RCP));
+            break;
         case '/':
             parse_slash();
             break;
@@ -124,6 +130,10 @@ std::string Tokenizer::tokentype_to_token(TokenType type)
         return "TokenType::LP";
     case TokenType::RP:
         return "TokenType::RP";
+    case TokenType::LCP:
+        return "TokenType::LCP";
+    case TokenType::RCP:
+        return "TokenType::RCP";
     case TokenType::END_OF_FILE:
         return "TokenType::END_OF_FILE";
     default:
