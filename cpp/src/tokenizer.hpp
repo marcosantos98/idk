@@ -42,6 +42,7 @@ private:
     void parse_slash();
     void parse_identifier();
     Token make_token(std::string, TokenType);
+    Token with_current_token(TokenType);
     std::string tokentype_to_token(TokenType);
     bool is_eof();
 };

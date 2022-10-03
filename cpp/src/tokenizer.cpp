@@ -91,6 +91,13 @@ Token Tokenizer::make_token(std::string lex_value, TokenType type)
     return {lex_value, type};
 }
 
+Token Tokenizer::with_current_token(TokenType type)
+{
+    Token token = make_token({m_input[m_cursor]}, type);
+    m_cursor++;
+    return token;
+}
+
 void Tokenizer::print_token(Token token)
 {
     printf("Token: Value[%s], Type[%s]\n", token.lex_value.c_str(), tokentype_to_token(token.type).c_str());
