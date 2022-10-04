@@ -150,6 +150,7 @@ public:
     std::vector<std::unique_ptr<Expression>> variables;
     std::vector<std::unique_ptr<Expression>> methods;
     Modifiers modifier;
+    //fixme 22/10/04: Only on child classes
     bool is_static;
     std::string class_name;
 
