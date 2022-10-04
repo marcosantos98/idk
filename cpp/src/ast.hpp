@@ -190,6 +190,11 @@ public:
     
     std::string to_json_str();
 
+    std::vector<std::unique_ptr<Expression>> get_expression()
+    {
+        return std::move(m_expressions);
+    }
+
 private:
     std::map<char, int> m_op_precedence = {
         {'+', 20},
