@@ -73,6 +73,30 @@ std::unique_ptr<ClassDefinitionExpression> ASTBuilder::parse_class_definition()
     return std::make_unique<ClassDefinitionExpression>(std::move(vars), std::move(methods), m_current_mod, s, m_current_class_name);
 }
 
+std::unique_ptr<CallExpression> ASTBuilder::parse_method_call()
+{
+    std::string method_name = get_token().lex_value;
+    advance_token();
+    advance_token(); // Eat (
+
+    std::vector<std::string> args = {};
+
+    while (get_token().type != TokenType::RP)
+    {
+        std::string arg_name = get_token().lex_value;
+        advance_token();
+        // fixme 22/10/03: hmm
+        if (get_token().type == TokenType::COMMA)
+            advance_token();
+
+        args.emplace_back(arg_name);
+    }
+
+    advance_token(); // Eat )
+
+    return std::make_unique<CallExpression>(method_name, args);
+}
+
 std::unique_ptr<Expression> ASTBuilder::try_parse_identifer()
 {
     if (std::find(m_keywords.begin(), m_keywords.end(), get_token().lex_value) != m_keywords.end())
@@ -98,12 +122,30 @@ std::unique_ptr<Expression> ASTBuilder::try_parse_identifer()
         }
     }
 
-    if (m_tokens[m_current_token + 2].type == TokenType::LP)
+    if (m_tokens[m_current_token - 1].type == TokenType::OPERATOR && m_tokens[m_current_token - 1].lex_value == "=")
     {
+        printf("Parsing varibale expression %s\n", get_token().lex_value.c_str());
+        return std::move(parse_variable_expression());
+    }
+    else if (m_tokens[m_current_token + 1].type == TokenType::LP)
+    {
+        printf("Parsing method call %s\n", get_token().lex_value.c_str());
+        return std::move(parse_method_call());
+    }
+    else if (m_tokens[m_current_token + 2].type == TokenType::LP)
+    {
+        printf("Parsing method %s %ld\n", get_token().lex_value.c_str(), m_current_token);
         return std::move(parse_method());
     }
 
     return std::move(parse_variable_declaration());
+}
+
+std::unique_ptr<VariableExpression> ASTBuilder::parse_variable_expression()
+{
+    auto result = get_token().lex_value;
+    advance_token();
+    return std::make_unique<VariableExpression>(result);
 }
 
 std::unique_ptr<MethodDefinitionExpression> ASTBuilder::parse_method()

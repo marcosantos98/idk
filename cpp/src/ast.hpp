@@ -120,7 +120,7 @@ public:
 
         nlohmann::json args_arr = nlohmann::json::array();
 
-        for(auto arg : args)
+        for (auto arg : args)
         {
             nlohmann::json obj;
             obj["class"] = arg.first;
@@ -150,7 +150,7 @@ public:
     std::vector<std::unique_ptr<Expression>> variables;
     std::vector<std::unique_ptr<Expression>> methods;
     Modifiers modifier;
-    //fixme 22/10/04: Only on child classes
+    // fixme 22/10/04: Only on child classes
     bool is_static;
     std::string class_name;
 
@@ -182,13 +182,58 @@ public:
     }
 };
 
+class CallExpression : public Expression
+{
+public:
+    std::string method_name;
+    std::vector<std::string> args;
+    CallExpression(std::string name, std::vector<std::string> args) : method_name(name), args(args) {}
+
+    nlohmann::json to_str() override
+    {
+        nlohmann::json json;
+
+        json["type"] = "Call Expression";
+
+        nlohmann::json args_arr = nlohmann::json::array();
+
+        for (auto arg : args)
+        {
+            nlohmann::json obj;
+            obj["arg_name"] = arg;
+
+            args_arr.emplace_back(obj);
+        }
+
+        json["args"] = args_arr;
+        return json;
+    }
+};
+
+class VariableExpression : public Expression
+{
+    public:
+    std::string var_name;
+    VariableExpression(std::string var) : var_name(var) {}
+
+    nlohmann::json to_str() override
+    {
+        nlohmann::json json;
+
+        json["type"] = "Variable Expression";
+        json["var_name"] = var_name;
+
+        return json;
+    }
+};
+
 class ASTBuilder
 {
 public:
     ASTBuilder(std::vector<Token> tokens) : m_tokens(tokens) {}
 
     void run();
-    
+
     std::string to_json_str();
 
     std::vector<std::unique_ptr<Expression>> get_expression()
@@ -224,11 +269,13 @@ private:
     int get_token_precedence();
 
     std::unique_ptr<ClassDefinitionExpression> parse_class_definition();
+    std::unique_ptr<VariableExpression> parse_variable_expression();
     std::unique_ptr<Expression> parse_primary();
     std::unique_ptr<Expression> parse_expression();
     std::unique_ptr<NumberLiteral> parse_number_literal();
     std::unique_ptr<StringLiteral> parse_string_literal();
     std::unique_ptr<MethodDefinitionExpression> parse_method();
+    std::unique_ptr<CallExpression> parse_method_call();
     std::unique_ptr<VariableDeclarationExpression> parse_variable_declaration();
     std::unique_ptr<Expression> try_parse_identifer();
     std::unique_ptr<Expression> parse_binary_right(int, std::unique_ptr<Expression>);
