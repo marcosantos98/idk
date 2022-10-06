@@ -40,6 +40,8 @@ OwnPtr<Expression> AST::parse_primary()
         return try_parse_identifier_or_base_type();
     case TokenType::STRING:
         return parse_string_literal_expression();
+    case TokenType::LP:
+        return parse_parentisis_expression();
     default:
         printf("Token not handled: %s\n", get_token().lex_value.c_str());
         exit(1);
@@ -74,6 +76,14 @@ OwnPtr<VariableExpression> AST::parse_variable_expression()
     String val = get_token().lex_value;
     m_current_token++;
     return std::make_unique<VariableExpression>(val);
+}
+
+OwnPtr<Expression> AST::parse_parentisis_expression()
+{
+    m_current_token++;
+    auto expr = parse_expression();
+    m_current_token++;
+    return std::move(expr);
 }
 
 OwnPtr<Expression> AST::parse_binary_right_side(int precedence, OwnPtr<Expression> lhs)
@@ -223,7 +233,9 @@ OwnPtr<Expression> AST::try_parse_identifier_or_base_type()
     {
         m_current_token = def.end;
         return parse_method_expression(def);
-    } else {
+    }
+    else
+    {
         return parse_variable_expression();
     }
 }

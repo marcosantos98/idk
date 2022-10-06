@@ -1,0 +1,4 @@
+public class Main {
+
+    public int sn = (17 * 2) + 35;
+}
