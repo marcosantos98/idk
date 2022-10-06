@@ -40,7 +40,7 @@ int main(int argc, char **args)
     //     i++;
     // }
 
-    AST ast(tokenizer.get_tokens());
+    AST ast(path, tokenizer.get_tokens());
     ast.parse();
 
     return 0;

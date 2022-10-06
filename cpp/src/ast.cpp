@@ -1,5 +1,7 @@
 #include "ast.hpp"
 
+#include <stdarg.h>
+
 void AST::parse()
 {
     NAVA::Definition class_def = parse_class_definition(true);
@@ -43,8 +45,7 @@ OwnPtr<Expression> AST::parse_primary()
     case TokenType::LP:
         return parse_parentisis_expression();
     default:
-        printf("Token not handled: %s\n", get_token().lex_value.c_str());
-        exit(1);
+        log_error("Token not handled: %s\n", get_token().lex_value.c_str());
         return nullptr;
     }
 }
@@ -83,7 +84,7 @@ OwnPtr<Expression> AST::parse_parentisis_expression()
     m_current_token++;
     auto expr = parse_expression();
     m_current_token++;
-    return std::move(expr);
+    return expr;
 }
 
 OwnPtr<Expression> AST::parse_binary_right_side(int precedence, OwnPtr<Expression> lhs)
@@ -159,11 +160,9 @@ OwnPtr<MethodExpression> AST::parse_method_expression(NAVA::Definition def)
 
         args.emplace_back(def);
 
-        // fixme 22/10/05: Implement compiler logger;
         if (get_token().type != TokenType::COMMA && get_token().type != TokenType::RP)
         {
-            printf("Expected [, or )] after a argument name.");
-            exit(1);
+            log_error("Expected [, or )] after a argument name.\n");
         }
         else if (get_token().type == TokenType::COMMA)
             m_current_token++;
@@ -198,11 +197,9 @@ OwnPtr<CallExpression> AST::parse_call_expression()
         auto val = parse_expression();
         args.emplace_back(std::move(val));
 
-        // fixme 22/10/05: Implement compiler logger;
         if (get_token().type != TokenType::COMMA && get_token().type != TokenType::RP)
         {
-            printf("Expected [, or )] after a argument name.");
-            exit(1);
+            log_error("Expected [, or )] after a argument name.");
         }
         else if (get_token().type == TokenType::COMMA)
         {
@@ -242,25 +239,48 @@ OwnPtr<Expression> AST::try_parse_identifier_or_base_type()
 
 NAVA::Definition AST::parse_class_definition(bool is_class_root)
 {
-    // fixme 22/10/05: Don't allow static for class root
-    (void)is_class_root;
-
     NAVA::Definition def;
 
-    while (get_token().type != TokenType::BASE_TYPE)
+    while (get_token().type != TokenType::BASE_TYPE && get_token().type != TokenType::IDENTIFIER)
     {
-        do_if_token_lex_pred_and_advance("public", [&]()
-                                         { def.mod.is_public = true; });
-        do_if_token_lex_pred_and_advance("final", [&]()
-                                         { def.mod.is_final = true; });
-        do_if_token_lex_pred_and_advance("static", [&]()
-                                         { def.mod.is_static = true; });
-        do_if_token_lex_pred_and_advance("abstract", [&]()
-                                         { def.mod.is_abstract = true; });
+        auto val = get_token().lex_value;
+
+        if(val == "public")
+        {
+            def.mod.is_public = true;
+            m_current_token++;
+        }
+        else if(val == "static")
+        {
+            if(is_class_root)
+                log_error("Root class can't be marked static.\n");
+            def.mod.is_static = true;
+            m_current_token++;
+        }
+        else if(val == "abstract")
+        {
+            if(def.mod.is_final)
+                log_error("Class marked as final can't be marked abstract.\n");
+            def.mod.is_abstract = true;
+            m_current_token++;
+        }
+        else if(val == "final")
+        {
+            if(def.mod.is_abstract)
+                log_error("Class marked as abstract can't be marked final.\n");
+            def.mod.is_final = true;
+            m_current_token++;
+        }
     }
 
-    // fixme 22/10/05: Fix this for enum and record
+    if(get_token().type != TokenType::BASE_TYPE)
+        log_error("Expected base type. [class, enum, record].\n");
+
     m_current_token++;
+
+    if(get_token().type != TokenType::IDENTIFIER)
+        log_error("Expected identifier for the class name.\n");
+
 
     def.class_name = get_token().lex_value;
     m_current_token++;
@@ -356,4 +376,16 @@ void AST::do_if_token_lex_pred_and_advance(String lex, std::function<void()> lam
         lambda();
         m_current_token++;
     }
+}
+
+void AST::log_error(const char *msg, ...)
+{
+    char buffer[4096];
+    va_list args;
+    va_start(args, msg);
+    (void)vsnprintf(buffer, sizeof(buffer), msg, args);
+    va_end(args);
+    printf("\u001b[1m\u001b[31m[AST:%s]%ld:%ld:\u001b[0m ", m_file_path.c_str(), get_token().row, get_token().col);
+    printf(buffer);
+    exit(1);
 }

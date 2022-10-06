@@ -7,13 +7,14 @@
 class AST
 {
 public:
-    AST(Vec<Token> tokens)
-        : m_tokens(tokens) {}
+    AST(String file_path, Vec<Token> tokens)
+        : m_file_path(file_path), m_tokens(tokens) {}
 
     void parse();
 
 private:
     size_t m_current_token = 0;
+    String m_file_path;
 
     Vec<Token> m_tokens;
 
@@ -41,4 +42,5 @@ private:
 
     int get_token_precedence();
     void do_if_token_lex_pred_and_advance(String, std::function<void()>);
+    void log_error(const char *, ...);
 };
