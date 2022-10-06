@@ -9,10 +9,15 @@ void Tokenizer::run()
         switch (m_input[m_cursor])
         {
         case '\n':
-        case '\b':
+        case '\r':
+            m_cursor++;
+            m_row++;
+            m_col = 0;
+            break;
         case '\t':
         case ' ':
             m_cursor++;
+            m_col++;
             break;
         case '+':
         case '-':
@@ -58,6 +63,7 @@ void Tokenizer::run()
             {
                 printf("Unknown char: %c\n", m_input[m_cursor]);
                 m_cursor++;
+                m_col++;
             }
             break;
         }
@@ -69,18 +75,26 @@ void Tokenizer::parse_number()
 {
     size_t cursor_start = m_cursor;
     while (!is_eof() && isdigit(m_input[m_cursor]))
+    {
         m_cursor++;
+        m_col++;
+    }
     m_tokens.emplace_back(make_token(m_input.substr(cursor_start, m_cursor - cursor_start), TokenType::NUMBER));
 }
 
 void Tokenizer::parse_string()
 {
     m_cursor++; // Advance "
+    m_col++;
     size_t cursor_start = m_cursor;
     while (!is_eof() && m_input[m_cursor] != '"')
+    {
         m_cursor++;
+        m_col++;
+    }
     m_tokens.emplace_back(make_token(m_input.substr(cursor_start, m_cursor - cursor_start), TokenType::STRING));
     m_cursor++; // Advance "
+    m_col++;
 }
 
 void Tokenizer::parse_slash()
@@ -88,12 +102,16 @@ void Tokenizer::parse_slash()
     if (m_input[m_cursor + 1] == '/') // Is a comment
     {
         while (!is_eof() && m_input[m_cursor] != '\n')
+        {
             m_cursor++;
+            m_col++;
+        }
     }
     else
     {
         m_tokens.emplace_back(make_token({m_input[m_cursor]}, TokenType::OPERATOR));
         m_cursor++;
+        m_col++;
     }
 }
 
@@ -101,7 +119,10 @@ void Tokenizer::parse_identifier()
 {
     uint64_t cursor_start = m_cursor;
     while (!is_eof() && isalpha(m_input[m_cursor]))
+    {
         m_cursor++;
+        m_col++;
+    }
 
     auto val = m_input.substr(cursor_start, m_cursor - cursor_start);
 
@@ -115,19 +136,20 @@ void Tokenizer::parse_identifier()
 
 Token Tokenizer::make_token(std::string lex_value, TokenType type)
 {
-    return {lex_value, type};
+    return {lex_value, type, m_row, m_col - lex_value.length() + 1};
 }
 
 Token Tokenizer::with_current_token(TokenType type)
 {
     Token token = make_token({m_input[m_cursor]}, type);
     m_cursor++;
+    m_col++;
     return token;
 }
 
 void Tokenizer::print_token(Token token)
 {
-    printf("Token: Value[%s], Type[%s]\n", token.lex_value.c_str(), tokentype_to_token(token.type).c_str());
+    printf("Token: Value[%s], Type[%s], Row[%ld], Col[%ld]\n", token.lex_value.c_str(), tokentype_to_token(token.type).c_str(), token.row, token.col);
 }
 
 std::string Tokenizer::tokentype_to_token(TokenType type)

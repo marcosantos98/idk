@@ -24,6 +24,8 @@ struct Token
 {
     std::string lex_value;
     TokenType type;
+    size_t row;
+    size_t col;
 };
 
 class Tokenizer
@@ -44,7 +46,9 @@ private:
     std::string m_input;
     std::vector<Token> m_tokens = {};
 
-    uint64_t m_cursor = 0;
+    size_t m_cursor = 0;
+    size_t m_row = 0;
+    size_t m_col = 0;
 
     void parse_number();
     void parse_string();
