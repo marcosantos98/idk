@@ -5,6 +5,7 @@
 #include <sstream>
 
 #include "tokenizer.hpp"
+#include "nava.hpp"
 #include "ast.hpp"
 
 std::string read_file_source(const char *file_path)
@@ -31,12 +32,16 @@ int main(int argc, char **args)
     Tokenizer tokenizer(read_file_source(path));
     tokenizer.run();
 
+    // size_t i = 0;
     // for (auto token : tokenizer.get_tokens())
+    // {
+    //     printf("[%ld] ", i);
     //     tokenizer.print_token(token);
+    //     i++;
+    // }
 
-    ASTBuilder ast_builder(tokenizer.get_tokens());
-    ast_builder.run();
-    printf("%s\n", ast_builder.to_json_str().c_str());
-    
+    AST ast(tokenizer.get_tokens());
+    ast.parse();
+
     return 0;
 }

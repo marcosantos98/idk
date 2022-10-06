@@ -1,0 +1,4 @@
+public class Nava {
+
+    private static final String msg = "Hello World";
+}

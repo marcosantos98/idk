@@ -1,0 +1,10 @@
+public class Nava {
+
+    public static void main(int argc, String argv) {
+        other(argc);
+    }
+
+    private void other(int argc) {
+        // Nop
+    }
+}

@@ -6,6 +6,8 @@
 enum class TokenType
 {
     IDENTIFIER,
+    MODIFIER,
+    BASE_TYPE,
     OPERATOR,
     NUMBER,
     STRING,
@@ -14,6 +16,7 @@ enum class TokenType
     LCP,
     RCP,
     COMMA,
+    SEMI_COLON,
     END_OF_FILE
 };
 
@@ -30,6 +33,7 @@ public:
 
     void run();
     void print_token(Token);
+    std::string tokentype_to_token(TokenType);
 
     std::vector<Token> get_tokens() const
     {
@@ -48,6 +52,5 @@ private:
     void parse_identifier();
     Token make_token(std::string, TokenType);
     Token with_current_token(TokenType);
-    std::string tokentype_to_token(TokenType);
     bool is_eof();
 };

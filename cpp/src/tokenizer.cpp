@@ -1,5 +1,7 @@
 #include "tokenizer.hpp"
 
+#include "nava.hpp"
+
 void Tokenizer::run()
 {
     while (!is_eof())
@@ -33,6 +35,9 @@ void Tokenizer::run()
             break;
         case ',':
             m_tokens.emplace_back(with_current_token(TokenType::COMMA));
+            break;
+        case ';':
+            m_tokens.emplace_back(with_current_token(TokenType::SEMI_COLON));
             break;
         case '/':
             parse_slash();
@@ -97,7 +102,15 @@ void Tokenizer::parse_identifier()
     uint64_t cursor_start = m_cursor;
     while (!is_eof() && isalpha(m_input[m_cursor]))
         m_cursor++;
-    m_tokens.emplace_back(make_token(m_input.substr(cursor_start, m_cursor - cursor_start), TokenType::IDENTIFIER));
+
+    auto val = m_input.substr(cursor_start, m_cursor - cursor_start);
+
+    if (VEC_HAS(NAVA::modifiers, val))
+        m_tokens.emplace_back(make_token(val, TokenType::MODIFIER));
+    else if (VEC_HAS(NAVA::base_types, val))
+        m_tokens.emplace_back(make_token(val, TokenType::BASE_TYPE));
+    else
+        m_tokens.emplace_back(make_token(val, TokenType::IDENTIFIER));
 }
 
 Token Tokenizer::make_token(std::string lex_value, TokenType type)
@@ -123,6 +136,10 @@ std::string Tokenizer::tokentype_to_token(TokenType type)
     {
     case TokenType::NUMBER:
         return "TokenType::NUMBER";
+    case TokenType::MODIFIER:
+        return "TokenType::MODIFIER";
+    case TokenType::BASE_TYPE:
+        return "TokenType::BASE_TYPE";
     case TokenType::OPERATOR:
         return "TokenType::OPERATOR";
     case TokenType::STRING:
@@ -137,6 +154,10 @@ std::string Tokenizer::tokentype_to_token(TokenType type)
         return "TokenType::LCP";
     case TokenType::RCP:
         return "TokenType::RCP";
+    case TokenType::COMMA:
+        return "TokenType::COMMA";
+    case TokenType::SEMI_COLON:
+        return "TokenType::SEMI_COLON";
     case TokenType::END_OF_FILE:
         return "TokenType::END_OF_FILE";
     default:

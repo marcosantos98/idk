@@ -1,0 +1,4 @@
+public class Nava {
+
+    public int n = 10;
+}

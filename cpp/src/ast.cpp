@@ -1,261 +1,82 @@
 #include "ast.hpp"
-#include "json.hpp"
 
-void ASTBuilder::run()
+void AST::parse()
 {
-    while (get_token().type != TokenType::END_OF_FILE)
-    {
-        auto bla = parse_expression();
-        if (bla)
-            m_expressions.emplace_back(std::move(bla));
-    }
-}
+    NAVA::Definition class_def = parse_class_definition(true);
 
-void ASTBuilder::advance_token()
-{
-    if (m_current_token < m_tokens.size())
-        m_current_token++;
-    else
-        printf("exceeded max value: %ld\n", m_tokens.size() - 1);
-}
+    m_current_token++; // advance {
 
-int ASTBuilder::get_token_precedence()
-{
-    if (m_current_token >= m_tokens.size())
-        return -1;
-
-    if (!isascii(get_token().lex_value[0]))
-        return -1;
-
-    if (!m_op_precedence.contains(get_token().lex_value[0]))
-        return -1;
-
-    return m_op_precedence[get_token().lex_value[0]];
-}
-
-std::unique_ptr<ClassDefinitionExpression> ASTBuilder::parse_class_definition()
-{
-
-    advance_token(); // eat class
-
-    if (get_token().type != TokenType::IDENTIFIER)
-        return nullptr;
-
-    m_current_class_name = get_token().lex_value;
-    advance_token();
-
-    if (get_token().type != TokenType::LCP)
-        return nullptr;
-
-    advance_token(); // Eat {
-
-    std::vector<std::unique_ptr<Expression>> vars = {};
-    std::vector<std::unique_ptr<Expression>> methods = {};
+    OwnPtrVec<Expression> class_expressions = {};
+    OwnPtrVec<Expression> method_expressions = {};
 
     while (get_token().type != TokenType::RCP)
     {
         auto expression = parse_expression();
 
         if (dynamic_cast<const VariableDeclarationExpression *>(expression.get()) != nullptr)
-            vars.emplace_back(std::move(expression));
-        else if (dynamic_cast<const MethodDefinitionExpression *>(expression.get()) != nullptr)
-            methods.emplace_back(std::move(expression));
+            class_expressions.emplace_back(std::move(expression));
+        else if (dynamic_cast<const MethodExpression *>(expression.get()) != nullptr)
+            method_expressions.emplace_back(std::move(expression));
     }
 
-    if (get_token().type != TokenType::RCP)
-        return nullptr;
+    m_current_token++;
 
-    advance_token(); // Eat }
+    m_root_class = std::make_unique<ClassExpression>(class_def, std::move(class_expressions), std::move(method_expressions));
 
-    bool s = has_static;
-    has_static = false;
+    auto &val = m_root_class;
 
-    return std::make_unique<ClassDefinitionExpression>(std::move(vars), std::move(methods), m_current_mod, s, m_current_class_name);
+    printf("%s\n", val.get()->to_json().dump(4).c_str());
 }
 
-std::unique_ptr<CallExpression> ASTBuilder::parse_method_call()
-{
-    std::string method_name = get_token().lex_value;
-    advance_token();
-    advance_token(); // Eat (
-
-    std::vector<std::string> args = {};
-
-    while (get_token().type != TokenType::RP)
-    {
-        std::string arg_name = get_token().lex_value;
-        advance_token();
-        // fixme 22/10/03: hmm
-        if (get_token().type == TokenType::COMMA)
-            advance_token();
-
-        args.emplace_back(arg_name);
-    }
-
-    advance_token(); // Eat )
-
-    return std::make_unique<CallExpression>(method_name, args);
-}
-
-std::unique_ptr<Expression> ASTBuilder::try_parse_identifer()
-{
-    if (std::find(m_keywords.begin(), m_keywords.end(), get_token().lex_value) != m_keywords.end())
-    {
-        if (get_token().lex_value == "public")
-        {
-            m_current_mod = Modifiers::PUBLIC;
-            advance_token();
-        }
-        if (get_token().lex_value == "private")
-        {
-            m_current_mod = Modifiers::PRIVATE;
-            advance_token();
-        }
-        if (get_token().lex_value == "static")
-        {
-            has_static = true;
-            advance_token();
-        }
-        if (get_token().lex_value == "class")
-        {
-            return std::move(parse_class_definition());
-        }
-    }
-
-    if (m_tokens[m_current_token - 1].type == TokenType::OPERATOR && m_tokens[m_current_token - 1].lex_value == "=")
-    {
-        printf("Parsing varibale expression %s\n", get_token().lex_value.c_str());
-        return std::move(parse_variable_expression());
-    }
-    else if (m_tokens[m_current_token + 1].type == TokenType::LP)
-    {
-        printf("Parsing method call %s\n", get_token().lex_value.c_str());
-        return std::move(parse_method_call());
-    }
-    else if (m_tokens[m_current_token + 2].type == TokenType::LP)
-    {
-        printf("Parsing method %s %ld\n", get_token().lex_value.c_str(), m_current_token);
-        return std::move(parse_method());
-    }
-
-    return std::move(parse_variable_declaration());
-}
-
-std::unique_ptr<VariableExpression> ASTBuilder::parse_variable_expression()
-{
-    auto result = get_token().lex_value;
-    advance_token();
-    return std::make_unique<VariableExpression>(result);
-}
-
-std::unique_ptr<MethodDefinitionExpression> ASTBuilder::parse_method()
-{
-
-    if (get_token().type != TokenType::IDENTIFIER)
-        return nullptr;
-
-    std::string ret_type = get_token().lex_value;
-    advance_token();
-
-    if (get_token().type != TokenType::IDENTIFIER)
-        return nullptr;
-
-    m_current_class_name = get_token().lex_value;
-    advance_token();
-
-    advance_token(); // Eat (
-
-    std::map<std::string, std::string> args = {};
-
-    while (get_token().type != TokenType::RP)
-    {
-        std::string class_name = get_token().lex_value;
-        advance_token();
-        std::string arg_name = get_token().lex_value;
-        advance_token();
-
-        args[class_name] = arg_name;
-
-        // fixme 22/10/03: hmm
-        if (get_token().type == TokenType::COMMA)
-            advance_token();
-    }
-
-    advance_token(); // Eat )
-    advance_token(); // Eat {
-
-    std::vector<std::unique_ptr<Expression>> body = {};
-
-    while (get_token().type != TokenType::RCP)
-    {
-        auto expression = parse_expression();
-        body.emplace_back(std::move(expression));
-    }
-
-    advance_token(); // Eat }
-
-    return std::make_unique<MethodDefinitionExpression>(m_current_class_name, ret_type, m_current_mod, has_static, std::move(body), args);
-}
-
-int i = 0;
-
-std::unique_ptr<Expression> ASTBuilder::parse_primary()
+OwnPtr<Expression> AST::parse_primary()
 {
     switch (get_token().type)
     {
     case TokenType::NUMBER:
-        return parse_number_literal();
+        return parse_number_literal_expression();
     case TokenType::IDENTIFIER:
-        return try_parse_identifer();
+    case TokenType::BASE_TYPE:
+    case TokenType::MODIFIER:
+        return try_parse_identifier_or_base_type();
     case TokenType::STRING:
-        return parse_string_literal();
+        return parse_string_literal_expression();
     default:
-        i++;
-        if (i > 10)
-            exit(1);
         printf("Token not handled: %s\n", get_token().lex_value.c_str());
+        exit(1);
         return nullptr;
     }
 }
 
-std::unique_ptr<Expression> ASTBuilder::parse_expression()
+OwnPtr<Expression> AST::parse_expression()
 {
     auto lhs = parse_primary();
     if (!lhs)
         return nullptr;
-    return parse_binary_right(0, std::move(lhs));
+    return parse_binary_right_side(0, move(lhs));
 }
 
-std::unique_ptr<NumberLiteral> ASTBuilder::parse_number_literal()
+OwnPtr<NumberLiteralExpression> AST::parse_number_literal_expression()
 {
     double val = std::stod(get_token().lex_value);
-    advance_token();
-    return std::make_unique<NumberLiteral>(val);
+    m_current_token++;
+    return std::make_unique<NumberLiteralExpression>(val);
 }
 
-std::unique_ptr<StringLiteral> ASTBuilder::parse_string_literal()
+OwnPtr<StringLiteralExpression> AST::parse_string_literal_expression()
 {
-    std::string val = get_token().lex_value;
-    advance_token();
-    return std::make_unique<StringLiteral>(val);
+    String val = get_token().lex_value;
+    m_current_token++;
+    return std::make_unique<StringLiteralExpression>(val);
 }
 
-std::unique_ptr<VariableDeclarationExpression> ASTBuilder::parse_variable_declaration()
+OwnPtr<VariableExpression> AST::parse_variable_expression()
 {
-    std::string class_name = get_token().lex_value;
-    advance_token();
-    if (get_token().type != TokenType::IDENTIFIER)
-        return nullptr;
-    std::string var_name = get_token().lex_value;
-    advance_token();
-    if (get_token().type != TokenType::OPERATOR && get_token().lex_value != "=")
-        return nullptr;
-    advance_token();
-    auto value = parse_expression();
-    return std::make_unique<VariableDeclarationExpression>(class_name, var_name, std::move(value));
+    String val = get_token().lex_value;
+    m_current_token++;
+    return std::make_unique<VariableExpression>(val);
 }
 
-std::unique_ptr<Expression> ASTBuilder::parse_binary_right(int precedence, std::unique_ptr<Expression> lhs)
+OwnPtr<Expression> AST::parse_binary_right_side(int precedence, OwnPtr<Expression> lhs)
 {
     while (true)
     {
@@ -268,7 +89,7 @@ std::unique_ptr<Expression> ASTBuilder::parse_binary_right(int precedence, std::
         if (current_precedence < precedence)
             return lhs;
 
-        advance_token();
+        m_current_token++;
 
         auto rhs = parse_primary();
         if (!rhs)
@@ -277,7 +98,7 @@ std::unique_ptr<Expression> ASTBuilder::parse_binary_right(int precedence, std::
         int next_precedence = get_token_precedence();
         if (current_precedence < next_precedence)
         {
-            rhs = parse_binary_right(current_precedence + 1, std::move(rhs));
+            rhs = parse_binary_right_side(current_precedence + 1, std::move(rhs));
             if (!rhs)
                 return nullptr;
         }
@@ -286,7 +107,241 @@ std::unique_ptr<Expression> ASTBuilder::parse_binary_right(int precedence, std::
     }
 }
 
-std::string ASTBuilder::to_json_str()
+OwnPtr<VariableDeclarationExpression> AST::parse_variable_declaration_expression(NAVA::Definition def)
 {
-    return m_expressions[0].get()->to_str().dump(4);
+    m_current_token++; // Advance =
+
+    OwnPtr<Expression> value = nullptr;
+
+    // fixme 22/10/06: Maybe check if the variable was declared before
+    if (get_token().type == TokenType::IDENTIFIER)
+        value = parse_variable_expression();
+    else
+        value = parse_expression();
+
+    // fixme 22/10/05: This is not a good option. Maybe remove semicolon?
+    m_current_token++; // Advance ;
+
+    return std::make_unique<VariableDeclarationExpression>(def, std::move(value));
+}
+
+OwnPtr<MethodExpression> AST::parse_method_expression(NAVA::Definition def)
+{
+
+    m_current_token++; // Eat (
+
+    Vec<NAVA::Definition> args = {};
+
+    while (get_token().type != TokenType::RP)
+    {
+        NAVA::Definition def;
+
+        while (get_token().type != TokenType::BASE_TYPE && get_token().type != TokenType::IDENTIFIER)
+        {
+            do_if_token_lex_pred_and_advance("final", [&]()
+                                             { def.mod.is_final = true; });
+        }
+
+        def.class_name = get_token().lex_value;
+        m_current_token++;
+        def.arg_name = get_token().lex_value;
+        m_current_token++;
+
+        args.emplace_back(def);
+
+        // fixme 22/10/05: Implement compiler logger;
+        if (get_token().type != TokenType::COMMA && get_token().type != TokenType::RP)
+        {
+            printf("Expected [, or )] after a argument name.");
+            exit(1);
+        }
+        else if (get_token().type == TokenType::COMMA)
+            m_current_token++;
+    }
+
+    m_current_token++; // Eat ()
+    m_current_token++; // Eat {
+
+    OwnPtrVec<Expression> body = {};
+
+    while (get_token().type != TokenType::RCP)
+    {
+        auto expression = parse_expression();
+        body.emplace_back(std::move(expression));
+    }
+
+    m_current_token++; // Eat }
+
+    return std::make_unique<MethodExpression>(def, args, std::move(body));
+}
+
+OwnPtr<CallExpression> AST::parse_call_expression()
+{
+    String name = get_token().lex_value;
+    m_current_token++;
+    m_current_token++; // Eat (
+
+    OwnPtrVec<Expression> args = {};
+
+    while (get_token().type != TokenType::RP)
+    {
+        auto val = parse_expression();
+        args.emplace_back(std::move(val));
+
+        // fixme 22/10/05: Implement compiler logger;
+        if (get_token().type != TokenType::COMMA && get_token().type != TokenType::RP)
+        {
+            printf("Expected [, or )] after a argument name.");
+            exit(1);
+        }
+        else if (get_token().type == TokenType::COMMA)
+        {
+            m_current_token++;
+        }
+    }
+
+    m_current_token++; // Eat )
+    m_current_token++; // Eat ;
+
+    return std::make_unique<CallExpression>(name, std::move(args));
+}
+
+OwnPtr<Expression> AST::try_parse_identifier_or_base_type()
+{
+    // fixme 22/10/06: I dont like this approach but it works.
+    if (get_token().type == TokenType::IDENTIFIER && m_tokens[m_current_token + 1].type == TokenType::LP)
+        return parse_call_expression();
+
+    NAVA::Definition def = parse_temp_definition();
+
+    if (m_tokens[def.end].type == TokenType::OPERATOR && m_tokens[def.end].lex_value == "=")
+    {
+        m_current_token = def.end;
+        return parse_variable_declaration_expression(def);
+    }
+    else if (m_tokens[def.end].type == TokenType::LP)
+    {
+        m_current_token = def.end;
+        return parse_method_expression(def);
+    } else {
+        return parse_variable_expression();
+    }
+}
+
+NAVA::Definition AST::parse_class_definition(bool is_class_root)
+{
+    // fixme 22/10/05: Don't allow static for class root
+    (void)is_class_root;
+
+    NAVA::Definition def;
+
+    while (get_token().type != TokenType::BASE_TYPE)
+    {
+        do_if_token_lex_pred_and_advance("public", [&]()
+                                         { def.mod.is_public = true; });
+        do_if_token_lex_pred_and_advance("final", [&]()
+                                         { def.mod.is_final = true; });
+        do_if_token_lex_pred_and_advance("static", [&]()
+                                         { def.mod.is_static = true; });
+        do_if_token_lex_pred_and_advance("abstract", [&]()
+                                         { def.mod.is_abstract = true; });
+    }
+
+    // fixme 22/10/05: Fix this for enum and record
+    m_current_token++;
+
+    def.class_name = get_token().lex_value;
+    m_current_token++;
+
+    return def;
+}
+
+NAVA::Definition AST::parse_definition()
+{
+    NAVA::Definition def;
+
+    while (get_token().type != TokenType::BASE_TYPE && get_token().type != TokenType::IDENTIFIER)
+    {
+        do_if_token_lex_pred_and_advance("public", [&]()
+                                         { def.mod.is_public = true; });
+        do_if_token_lex_pred_and_advance("private", [&]()
+                                         { def.mod.is_public = false; });
+        do_if_token_lex_pred_and_advance("final", [&]()
+                                         { def.mod.is_final = true; });
+        do_if_token_lex_pred_and_advance("static", [&]()
+                                         { def.mod.is_static = true; });
+    }
+
+    def.class_name = get_token().lex_value;
+    m_current_token++;
+    def.arg_name = get_token().lex_value;
+    m_current_token++;
+
+    return def;
+}
+
+NAVA::Definition AST::parse_temp_definition()
+{
+    NAVA::Definition def;
+
+    def.start = m_current_token;
+
+    size_t tmp = m_current_token;
+
+    while (m_tokens[tmp].type != TokenType::BASE_TYPE && m_tokens[tmp].type != TokenType::IDENTIFIER)
+    {
+
+        if (m_tokens[tmp].type == TokenType::MODIFIER && m_tokens[tmp].lex_value == "public")
+        {
+            def.mod.is_public = true;
+            tmp++;
+        }
+        else if (m_tokens[tmp].type == TokenType::MODIFIER && m_tokens[tmp].lex_value == "private")
+        {
+            def.mod.is_public = false;
+            tmp++;
+        }
+        else if (m_tokens[tmp].type == TokenType::MODIFIER && m_tokens[tmp].lex_value == "final")
+        {
+            def.mod.is_final = true;
+            tmp++;
+        }
+        else if (m_tokens[tmp].type == TokenType::MODIFIER && m_tokens[tmp].lex_value == "static")
+        {
+            def.mod.is_static = true;
+            tmp++;
+        }
+    }
+
+    def.class_name = m_tokens[tmp].lex_value;
+    tmp++;
+    def.arg_name = m_tokens[tmp].lex_value;
+    tmp++;
+
+    def.end = tmp;
+
+    return def;
+}
+
+int AST::get_token_precedence()
+{
+    if (m_current_token >= m_tokens.size())
+        return -1;
+
+    if (!isascii(get_token().lex_value[0]))
+        return -1;
+
+    if (!NAVA::op_precedence.contains(get_token().lex_value[0]))
+        return -1;
+
+    return NAVA::op_precedence[get_token().lex_value[0]];
+}
+
+void AST::do_if_token_lex_pred_and_advance(String lex, std::function<void()> lambda)
+{
+    if (get_token().lex_value == lex)
+    {
+        lambda();
+        m_current_token++;
+    }
 }

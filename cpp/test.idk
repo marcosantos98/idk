@@ -1,9 +1,0 @@
-public static class Main {
-
-    String msg = "Hello World"
-    int n = 34
-
-    public void main(int argc, String argv) {
-        int j = 10
-    }
-}
