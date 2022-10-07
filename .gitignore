@@ -7,3 +7,4 @@ cpp/build
 cpp/.vscode
 cpp/nava/*.asm
 cpp/nava/*.o
+cpp/nava/main
