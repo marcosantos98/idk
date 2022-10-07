@@ -159,13 +159,7 @@ OwnPtr<VariableDeclarationExpression> AST::parse_variable_declaration_expression
 {
     m_current_token++; // Advance =
 
-    OwnPtr<Expression> value = nullptr;
-
-    // fixme 22/10/06: Maybe check if the variable was declared before
-    if (get_token().type == TokenType::IDENTIFIER)
-        value = parse_variable_expression();
-    else
-        value = parse_expression();
+    OwnPtr<Expression> value = parse_expression();
 
     // fixme 22/10/05: This is not a good option. Maybe remove semicolon?
     m_current_token++; // Advance ;
