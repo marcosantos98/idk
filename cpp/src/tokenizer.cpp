@@ -74,7 +74,7 @@ void Tokenizer::run()
 void Tokenizer::parse_number()
 {
     size_t cursor_start = m_cursor;
-    while (!is_eof() && isdigit(m_input[m_cursor]))
+    while (!is_eof() && (isdigit(m_input[m_cursor]) || m_input[m_cursor] == '.'))
     {
         m_cursor++;
         m_col++;

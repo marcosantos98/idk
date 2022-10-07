@@ -4,6 +4,8 @@ Json NumberLiteralExpression::to_json()
 {
     Json json;
     json["type"] = "NumberLiteralExpression";
+    //fixme 22/10/07: This is done because only supported this two.
+    json["number_type"] = p_type == NAVA::NumberType::INT ? "int" : "double";
     json["value"] = p_value;
     return json;
 }

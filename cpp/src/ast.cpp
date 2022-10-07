@@ -5,11 +5,11 @@
 void AST::parse()
 {
 
-    while(get_token().type != TokenType::BASE_TYPE && get_token().type != TokenType::MODIFIER)
+    while (get_token().type != TokenType::BASE_TYPE && get_token().type != TokenType::MODIFIER)
     {
         auto expr = parse_expression();
 
-        if(dynamic_cast<const ImportExpression*>(expr.get()) != nullptr)
+        if (dynamic_cast<const ImportExpression *>(expr.get()) != nullptr)
             m_imports.emplace_back(std::move(expr));
     }
 
@@ -76,7 +76,7 @@ OwnPtr<ImportExpression> AST::parse_import_expression()
 
     String path = "";
 
-    while(get_token().type != TokenType::SEMI_COLON)
+    while (get_token().type != TokenType::SEMI_COLON)
     {
         path.append(get_token().lex_value).append(".");
         m_current_token++;
@@ -91,9 +91,15 @@ OwnPtr<ImportExpression> AST::parse_import_expression()
 
 OwnPtr<NumberLiteralExpression> AST::parse_number_literal_expression()
 {
+    NAVA::NumberType type;
+
+    if (get_token().lex_value.find('.') != 0)
+        type = NAVA::NumberType::DOUBLE;
+    else
+        type = NAVA::NumberType::INT;
     double val = std::stod(get_token().lex_value);
     m_current_token++;
-    return std::make_unique<NumberLiteralExpression>(val);
+    return std::make_unique<NumberLiteralExpression>(val, type);
 }
 
 OwnPtr<StringLiteralExpression> AST::parse_string_literal_expression()
@@ -250,7 +256,7 @@ OwnPtr<Expression> AST::try_parse_identifier_or_base_type()
     if (get_token().type == TokenType::IDENTIFIER && m_tokens[m_current_token + 1].type == TokenType::LP)
         return parse_call_expression();
 
-    if(get_token().type == TokenType::IDENTIFIER && get_token().lex_value == "import")
+    if (get_token().type == TokenType::IDENTIFIER && get_token().lex_value == "import")
         return parse_import_expression();
 
     NAVA::Definition def = parse_temp_definition();
@@ -279,42 +285,41 @@ NAVA::Definition AST::parse_class_definition(bool is_class_root)
     {
         auto val = get_token().lex_value;
 
-        if(val == "public")
+        if (val == "public")
         {
             def.mod.is_public = true;
             m_current_token++;
         }
-        else if(val == "static")
+        else if (val == "static")
         {
-            if(is_class_root)
+            if (is_class_root)
                 log_error("Root class can't be marked static.\n");
             def.mod.is_static = true;
             m_current_token++;
         }
-        else if(val == "abstract")
+        else if (val == "abstract")
         {
-            if(def.mod.is_final)
+            if (def.mod.is_final)
                 log_error("Class marked as final can't be marked abstract.\n");
             def.mod.is_abstract = true;
             m_current_token++;
         }
-        else if(val == "final")
+        else if (val == "final")
         {
-            if(def.mod.is_abstract)
+            if (def.mod.is_abstract)
                 log_error("Class marked as abstract can't be marked final.\n");
             def.mod.is_final = true;
             m_current_token++;
         }
     }
 
-    if(get_token().type != TokenType::BASE_TYPE)
+    if (get_token().type != TokenType::BASE_TYPE)
         log_error("Expected base type. [class, enum, record].\n");
 
     m_current_token++;
 
-    if(get_token().type != TokenType::IDENTIFIER)
+    if (get_token().type != TokenType::IDENTIFIER)
         log_error("Expected identifier for the class name.\n");
-
 
     def.class_name = get_token().lex_value;
     m_current_token++;

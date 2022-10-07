@@ -53,6 +53,12 @@ namespace NAVA
         {'/', 30},
     };
 
+    enum class NumberType
+    {
+        INT,
+        DOUBLE,
+    };
+
     struct Modifier
     {
         bool is_public = false;

@@ -15,8 +15,9 @@ class NumberLiteralExpression : public Expression
 {
 public:
     double p_value;
-    NumberLiteralExpression(double val)
-        : p_value(val) {}
+    NAVA::NumberType p_type;
+    NumberLiteralExpression(double val, NAVA::NumberType type)
+        : p_value(val), p_type(type) {}
 
     virtual Json to_json() override;
 };
