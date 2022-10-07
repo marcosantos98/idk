@@ -118,7 +118,7 @@ void Tokenizer::parse_slash()
 void Tokenizer::parse_identifier()
 {
     uint64_t cursor_start = m_cursor;
-    while (!is_eof() && isalpha(m_input[m_cursor]))
+    while (!is_eof() && (isalpha(m_input[m_cursor]) || m_input[m_cursor] == '.'))
     {
         m_cursor++;
         m_col++;
