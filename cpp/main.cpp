@@ -14,6 +14,12 @@ std::string read_file_source(const char *file_path)
     std::ifstream inFile;
     inFile.open(file_path); // open the input file
 
+    if(inFile.fail())
+    {
+        printf("Files doesn't exist! %s\n", file_path);
+        exit(1);
+    }
+
     std::stringstream strStream;
     strStream << inFile.rdbuf();       // read the file
     std::string str = strStream.str(); // str holds the content of the file
