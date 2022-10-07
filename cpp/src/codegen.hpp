@@ -20,6 +20,8 @@ private:
     std::string m_text_section = "segment .text\n";
     std::string m_data_section = "segment .data\n";
     std::string m_final_out;
+    std::string m_externs;
+    std::string m_globals;
 
     Map<String, String> m_class_vars = {};
 

@@ -22,13 +22,13 @@ void CodeGenerator::run()
         }
     }
 
-    for (auto &importt : m_imports)
-    {
-        if (auto import = dynamic_cast<const ImportExpression *>(importt.get()))
-        {
-            m_final_out.append("%include \"").append(import->p_path).append(".asm").append("\"\n");
-        }
-    }
+    // for (auto &importt : m_imports)
+    // {
+    //     if (auto import = dynamic_cast<const ImportExpression *>(importt.get()))
+    //     {
+    //         m_final_out.append("%include \"").append(import->p_path).append(".asm").append("\"\n");
+    //     }
+    // }
 
     if (has_main)
         m_text_section.append("global _start\n");
@@ -49,6 +49,7 @@ void CodeGenerator::run()
         m_text_section.append("\tsyscall\n");
     }
 
+    m_final_out.append(m_externs);
     m_final_out.append(m_text_section).append("\n");
     m_final_out.append(m_data_section).append("\n");
 }
@@ -116,6 +117,11 @@ void CodeGenerator::parse_class_methods()
         size_t current_offset = 0;
 
         auto current_method = static_cast<const MethodExpression *>(class_def->p_methods[j].get());
+
+        m_text_section.append("global ")
+            .append(class_def->p_definition.class_name)
+            .append("$")
+            .append(current_method->p_definition.arg_name).append("\n");
 
         m_text_section.append(class_def->p_definition.class_name).append("$").append(current_method->p_definition.arg_name).append(":\n");
 
@@ -213,7 +219,8 @@ void CodeGenerator::parse_class_methods()
                     }
                 }
                 else
-                {
+                {   
+                   
                     if (call->p_args.size() > 0 && call->p_args.size() < 6)
                     {
                         for (auto &arg : call->p_args)
@@ -242,6 +249,7 @@ void CodeGenerator::parse_class_methods()
                     }
                     String s = call->p_method_name;
                     replace(s.begin(), s.end(), '.', '$');
+                    m_externs.append("extern ").append(s).append("\n");
                     body_text.append("\tcall ")
                         .append(s)
                         .append("\n");
