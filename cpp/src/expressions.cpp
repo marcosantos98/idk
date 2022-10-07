@@ -101,6 +101,24 @@ Json ImportExpression::to_json()
     return json;
 }
 
+Json IfExpression::to_json()
+{
+    Json json;
+
+    json["type"] = "IfExpression";
+    json["condition"] = p_condition.get()->to_json();
+    
+    Json body_arr = nlohmann::json::array();
+
+    for (auto &expr : p_body)
+        body_arr.emplace_back(expr->to_json());
+
+    json["body"] = body_arr;
+
+
+    return json;
+}
+
 Json ClassExpression::to_json()
 {
     Json json = def_to_json(p_definition);

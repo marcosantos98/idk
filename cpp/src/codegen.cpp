@@ -121,7 +121,8 @@ void CodeGenerator::parse_class_methods()
         m_text_section.append("global ")
             .append(class_def->p_definition.class_name)
             .append("$")
-            .append(current_method->p_definition.arg_name).append("\n");
+            .append(current_method->p_definition.arg_name)
+            .append("\n");
 
         m_text_section.append(class_def->p_definition.class_name).append("$").append(current_method->p_definition.arg_name).append(":\n");
 
@@ -134,6 +135,8 @@ void CodeGenerator::parse_class_methods()
         bool has_calls = false;
 
         String body_text = "";
+
+        size_t adrr_jump = 0;
 
         while (k < current_method->p_body.size())
         {
@@ -219,8 +222,8 @@ void CodeGenerator::parse_class_methods()
                     }
                 }
                 else
-                {   
-                   
+                {
+
                     if (call->p_args.size() > 0 && call->p_args.size() < 6)
                     {
                         for (auto &arg : call->p_args)
@@ -254,6 +257,84 @@ void CodeGenerator::parse_class_methods()
                         .append(s)
                         .append("\n");
                 }
+            }
+            else if (auto if_exp = dynamic_cast<const IfExpression *>(current_method->p_body[k].get()))
+            {
+                printf("%s\n", current_method->p_body[k].get()->to_json().dump(4).c_str());
+
+                if (auto n_cond = dynamic_cast<const NumberLiteralExpression *>(if_exp->p_condition.get()))
+                {
+                    current_offset += 4;
+                    body_text.append("\tmov dword [rbp-")
+                        .append(std::to_string(current_offset))
+                        .append("], ")
+                        .append(std::to_string((int)n_cond->p_value))
+                        .append("\n");
+                    body_text.append("\tcmp dword [rbp-")
+                        .append(std::to_string(current_offset))
+                        .append("], 0\n");
+                    body_text.append("\tjz .addr_")
+                        .append(std::to_string(adrr_jump))
+                        .append("\n");
+                }
+
+                size_t m = 0;
+                while (m < if_exp->p_body.size())
+                {
+                    if (auto call = dynamic_cast<const CallExpression *>(if_exp->p_body[m].get()))
+                    {
+                        has_calls = true;
+                        if (call->p_method_name == "asm")
+                        {
+                            // fixme 22/10/06: Check for only one arg or maybe parse this individually instead of working as a call expression.
+                            if (auto str_val = dynamic_cast<const StringLiteralExpression *>(call->p_args[0].get()))
+                            {
+                                body_text.append(str_val->p_value);
+                            }
+                        }
+                        else
+                        {
+
+                            if (call->p_args.size() > 0 && call->p_args.size() < 6)
+                            {
+                                for (auto &arg : call->p_args)
+                                {
+                                    // fixme 22/10/07: Expressions
+                                    if (auto number = dynamic_cast<const NumberLiteralExpression *>(arg.get()))
+                                    {
+                                        // fixme 22/10/07: Provide number type in expression
+                                        body_text.append("\tmov rdi, ")
+                                            .append(std::to_string((int)number->p_value))
+                                            .append("\n");
+                                    }
+                                    else if (auto varibleaa = dynamic_cast<const VariableExpression *>(arg.get()))
+                                    {
+                                        if (stack.find(varibleaa->p_var_name) != stack.end())
+                                        {
+                                            auto reg = stack[varibleaa->p_var_name].class_name == "int" ? "edi" : "rdi";
+                                            body_text.append("\tmov ")
+                                                .append(reg)
+                                                .append(", [rbp-")
+                                                .append(std::to_string(stack[varibleaa->p_var_name].offset))
+                                                .append("]\n");
+                                        }
+                                    }
+                                }
+                            }
+                            String s = call->p_method_name;
+                            replace(s.begin(), s.end(), '.', '$');
+                            m_externs.append("extern ").append(s).append("\n");
+                            body_text.append("\tcall ")
+                                .append(s)
+                                .append("\n");
+                        }
+                    }
+                    m++;
+                }
+
+                body_text.append(".addr_")
+                    .append(std::to_string(adrr_jump))
+                    .append(":\n");
             }
             k++;
         }

@@ -85,8 +85,8 @@ class CallExpression : public Expression
 public:
     String p_method_name;
     OwnPtrVec<Expression> p_args;
-    
-    CallExpression(String method_name, OwnPtrVec<Expression> args) 
+
+    CallExpression(String method_name, OwnPtrVec<Expression> args)
         : p_method_name(method_name), p_args(move(args)) {}
 
     virtual Json to_json() override;
@@ -94,11 +94,22 @@ public:
 
 class ImportExpression : public Expression
 {
-    public:
+public:
     String p_path;
 
     ImportExpression(String path)
         : p_path(path) {}
+
+    virtual Json to_json() override;
+};
+
+class IfExpression : public Expression
+{
+public:
+    OwnPtr<Expression> p_condition;
+    OwnPtrVec<Expression> p_body;
+    IfExpression(OwnPtr<Expression> condition, OwnPtrVec<Expression> body)
+        : p_condition(move(condition)), p_body(move(body)) {}
 
     virtual Json to_json() override;
 };

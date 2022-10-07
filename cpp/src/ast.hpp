@@ -40,6 +40,7 @@ private:
     OwnPtr<Expression> parse_parentisis_expression();
     OwnPtr<Expression> parse_binary_right_side(int, OwnPtr<Expression>);
     OwnPtr<VariableDeclarationExpression> parse_variable_declaration_expression(NAVA::Definition);
+    OwnPtr<IfExpression> parse_if_expression();
     OwnPtr<MethodExpression> parse_method_expression(NAVA::Definition);
     OwnPtr<CallExpression> parse_call_expression();
     OwnPtr<Expression> try_parse_identifier_or_base_type();

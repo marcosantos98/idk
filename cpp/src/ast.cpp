@@ -167,6 +167,36 @@ OwnPtr<VariableDeclarationExpression> AST::parse_variable_declaration_expression
     return std::make_unique<VariableDeclarationExpression>(def, std::move(value));
 }
 
+OwnPtr<IfExpression> AST::parse_if_expression()
+{
+    m_current_token++; // Eat if
+    m_current_token++; // Eat (
+
+    auto parse = parse_expression();
+
+    m_current_token++; // Eat )
+
+    OwnPtrVec<Expression> body = {};
+    if (get_token().type == TokenType::LCP)
+    {
+        m_current_token++; //Eat {
+        while (get_token().type != TokenType::RCP)
+        {
+            auto expression = parse_expression();
+            body.emplace_back(std::move(expression));
+        }
+
+        m_current_token++; // Eat }
+
+    } else {
+        auto b = parse_expression();
+        body.emplace_back(move(b));
+    }
+
+
+    return std::make_unique<IfExpression>(move(parse), move(body));
+}
+
 OwnPtr<MethodExpression> AST::parse_method_expression(NAVA::Definition def)
 {
 
@@ -246,12 +276,20 @@ OwnPtr<CallExpression> AST::parse_call_expression()
 
 OwnPtr<Expression> AST::try_parse_identifier_or_base_type()
 {
+
+    //fixme 22/10/07: Add keywords to remove them from identifiers.
+    if (get_token().type == TokenType::IDENTIFIER && get_token().lex_value == "if")
+        return parse_if_expression();
+
     // fixme 22/10/06: I dont like this approach but it works.
     if (get_token().type == TokenType::IDENTIFIER && m_tokens[m_current_token + 1].type == TokenType::LP)
         return parse_call_expression();
 
     if (get_token().type == TokenType::IDENTIFIER && get_token().lex_value == "import")
         return parse_import_expression();
+
+
+
 
     NAVA::Definition def = parse_temp_definition();
 
