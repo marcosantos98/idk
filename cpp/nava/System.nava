@@ -32,4 +32,10 @@ public class System {
         add     rsp, 40
 ");
     }
+
+    public static void exit(int val) {
+        asm("   mov rax, 60
+    syscall
+");
+    }
 }
