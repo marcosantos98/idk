@@ -13,4 +13,5 @@ add_executable(idk
     ./src/expressions.cpp
     ./src/ast.cpp
     ./src/json.hpp
+    ./src/codegen.cpp
     )

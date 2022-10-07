@@ -7,6 +7,7 @@
 #include "tokenizer.hpp"
 #include "nava.hpp"
 #include "ast.hpp"
+#include "codegen.hpp"
 
 std::string read_file_source(const char *file_path)
 {
@@ -48,6 +49,18 @@ int main(int argc, char **args)
 
     AST ast(path, tokenizer.get_tokens());
     ast.parse();
+    
+    CodeGenerator code_gen(ast.get_root_class(), ast.get_imports());
+    code_gen.run();
+
+    //printf("%s\n", code_gen.get_final_out().c_str());
+
+    std::string path_str = path;
+    //fixme 22/10/04: a bit of hackery
+    std::string final_path = path_str.substr(0, path_str.length() - 4).append("asm");
+    std::ofstream out(final_path);
+    out << code_gen.get_final_out();
+    out.close();
 
     return 0;
 }
