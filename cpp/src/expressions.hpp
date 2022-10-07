@@ -91,6 +91,17 @@ public:
     virtual Json to_json() override;
 };
 
+class ImportExpression : public Expression
+{
+    public:
+    String p_path;
+
+    ImportExpression(String path)
+        : p_path(path) {}
+
+    virtual Json to_json() override;
+};
+
 class ClassExpression : public Expression
 {
 public:

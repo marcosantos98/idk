@@ -4,6 +4,15 @@
 
 void AST::parse()
 {
+
+    while(get_token().type != TokenType::BASE_TYPE && get_token().type != TokenType::MODIFIER)
+    {
+        auto expr = parse_expression();
+
+        if(dynamic_cast<const ImportExpression*>(expr.get()) != nullptr)
+            m_imports.emplace_back(std::move(expr));
+    }
+
     NAVA::Definition class_def = parse_class_definition(true);
 
     m_current_token++; // advance {
@@ -25,9 +34,12 @@ void AST::parse()
 
     m_root_class = std::make_unique<ClassExpression>(class_def, std::move(class_expressions), std::move(method_expressions));
 
-    auto &val = m_root_class;
+    // auto &val = m_root_class;
 
-    printf("%s\n", val.get()->to_json().dump(4).c_str());
+    // for(auto& import : m_imports)
+    //     printf("%s\n", import.get()->to_json().dump(4).c_str());
+
+    // printf("%s\n", val.get()->to_json().dump(4).c_str());
 }
 
 OwnPtr<Expression> AST::parse_primary()
@@ -56,6 +68,25 @@ OwnPtr<Expression> AST::parse_expression()
     if (!lhs)
         return nullptr;
     return parse_binary_right_side(0, move(lhs));
+}
+
+OwnPtr<ImportExpression> AST::parse_import_expression()
+{
+    m_current_token++; // Eat import
+
+    String path = "";
+
+    while(get_token().type != TokenType::SEMI_COLON)
+    {
+        path.append(get_token().lex_value).append(".");
+        m_current_token++;
+    }
+
+    m_current_token++; // Eat ;
+
+    path = path.substr(0, path.length() - 1);
+
+    return std::make_unique<ImportExpression>(path);
 }
 
 OwnPtr<NumberLiteralExpression> AST::parse_number_literal_expression()
@@ -218,6 +249,9 @@ OwnPtr<Expression> AST::try_parse_identifier_or_base_type()
     // fixme 22/10/06: I dont like this approach but it works.
     if (get_token().type == TokenType::IDENTIFIER && m_tokens[m_current_token + 1].type == TokenType::LP)
         return parse_call_expression();
+
+    if(get_token().type == TokenType::IDENTIFIER && get_token().lex_value == "import")
+        return parse_import_expression();
 
     NAVA::Definition def = parse_temp_definition();
 

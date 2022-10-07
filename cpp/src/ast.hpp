@@ -12,6 +12,16 @@ public:
 
     void parse();
 
+    OwnPtr<ClassExpression> get_root_class()
+    {
+        return move(m_root_class);
+    }
+
+    OwnPtrVec<Expression> get_imports()
+    {
+        return move(m_imports);
+    }
+
 private:
     size_t m_current_token = 0;
     String m_file_path;
@@ -19,9 +29,11 @@ private:
     Vec<Token> m_tokens;
 
     OwnPtr<ClassExpression> m_root_class;
+    OwnPtrVec<Expression> m_imports = {};
 
     OwnPtr<Expression> parse_primary();
     OwnPtr<Expression> parse_expression();
+    OwnPtr<ImportExpression> parse_import_expression();
     OwnPtr<NumberLiteralExpression> parse_number_literal_expression();
     OwnPtr<StringLiteralExpression> parse_string_literal_expression();
     OwnPtr<VariableExpression> parse_variable_expression();

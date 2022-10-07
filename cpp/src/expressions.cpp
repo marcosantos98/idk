@@ -83,7 +83,19 @@ Json CallExpression::to_json()
     }
 
     json["args"] = args;
+
+    json["method_name"] = p_method_name;
     
+    return json;
+}
+
+Json ImportExpression::to_json()
+{
+    Json json;
+
+    json["type"] = "ImportExpression";
+    json["path"] = p_path;
+
     return json;
 }
 
