@@ -93,7 +93,7 @@ OwnPtr<NumberLiteralExpression> AST::parse_number_literal_expression()
 {
     NAVA::NumberType type;
 
-    if (get_token().lex_value.find('.') != 0)
+    if (get_token().lex_value.find('.') != std::string::npos)
         type = NAVA::NumberType::DOUBLE;
     else
         type = NAVA::NumberType::INT;
