@@ -76,6 +76,31 @@ namespace NAVA
         size_t end = 0;
     };
 
+    enum class VarContext {
+        STACK,
+        DATA,
+    };
+
+    struct StackVarInfo {
+        size_t offset;
+        String class_name;
+    };
+
+    struct GlobalContext {
+        NAVA::VarContext var_ctx;
+        String text_section;
+        String extern_section;
+        String data_section;
+        String class_name;
+        size_t tmp_str_cnt = 0;
+        size_t label_cnt = 0;
+        NAVA::Definition current_def;
+        size_t current_stack_offset = 0;
+        Vec<String> data_vars = {};
+        Vec<String> externs = {};
+        Map<String, NAVA::StackVarInfo> stack_vars = {};
+    };
+
     static String modifier_to_str(Modifier modifier)
     {
         String str = "";

@@ -9,6 +9,7 @@ public:
     virtual ~Expression() = default;
 
     virtual nlohmann::json to_json() = 0;
+    virtual String code_gen(NAVA::GlobalContext*) = 0;
 };
 
 class NumberLiteralExpression : public Expression
@@ -20,6 +21,7 @@ public:
         : p_value(val), p_type(type) {}
 
     virtual Json to_json() override;
+    virtual String code_gen(NAVA::GlobalContext*) override;
 };
 
 class StringLiteralExpression : public Expression
@@ -30,6 +32,7 @@ public:
         : p_value(val) {}
 
     virtual Json to_json() override;
+    virtual String code_gen(NAVA::GlobalContext*) override;
 };
 
 class BinaryExpression : public Expression
@@ -43,6 +46,7 @@ public:
         : p_op(op), p_lhs(move(left)), p_rhs(move(right)) {}
 
     virtual Json to_json() override;
+    virtual String code_gen(NAVA::GlobalContext*) override;
 };
 
 class VariableExpression : public Expression
@@ -53,6 +57,7 @@ public:
         : p_var_name(var) {}
 
     virtual Json to_json() override;
+    virtual String code_gen(NAVA::GlobalContext*) override;
 };
 
 class VariableDeclarationExpression : public Expression
@@ -65,6 +70,7 @@ public:
         : p_definition(def), p_value(move(val)){};
 
     virtual nlohmann::json to_json() override;
+    virtual String code_gen(NAVA::GlobalContext*) override;
 };
 
 class MethodExpression : public Expression
@@ -78,6 +84,7 @@ public:
         : p_definition(def), p_args(args), p_body(move(body)) {}
 
     virtual nlohmann::json to_json() override;
+    virtual String code_gen(NAVA::GlobalContext*) override;
 };
 
 class CallExpression : public Expression
@@ -90,6 +97,7 @@ public:
         : p_method_name(method_name), p_args(move(args)) {}
 
     virtual Json to_json() override;
+    virtual String code_gen(NAVA::GlobalContext*) override;
 };
 
 class ImportExpression : public Expression
@@ -101,6 +109,7 @@ public:
         : p_path(path) {}
 
     virtual Json to_json() override;
+    virtual String code_gen(NAVA::GlobalContext*) override;
 };
 
 class IfExpression : public Expression
@@ -112,6 +121,7 @@ public:
         : p_condition(move(condition)), p_body(move(body)) {}
 
     virtual Json to_json() override;
+    virtual String code_gen(NAVA::GlobalContext*) override;
 };
 
 class ClassExpression : public Expression
@@ -125,4 +135,5 @@ public:
         : p_definition(def), p_class_variables(move(class_variables)), p_methods(move(methods)) {}
 
     virtual nlohmann::json to_json() override;
+    virtual String code_gen(NAVA::GlobalContext*) override;
 };
