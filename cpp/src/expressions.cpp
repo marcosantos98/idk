@@ -345,8 +345,8 @@ String CallExpression::code_gen(NAVA::GlobalContext *ctx)
                 else if (auto string = dynamic_cast<const StringLiteralExpression *>(arg.get()))
                 {
                     NAVA::Definition tmp = {
+                        .arg_name = ""+std::to_string(ctx->tmp_str_cnt),
                         .class_name = "tmp_str",
-                        .arg_name = std::to_string(ctx->tmp_str_cnt),
                     };
                     ctx->current_def = tmp;
                     ctx->tmp_str_cnt++;
