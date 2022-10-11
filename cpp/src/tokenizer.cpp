@@ -53,6 +53,9 @@ void Tokenizer::run()
         case '!':
             parse_exclamation_mark();
             break;
+        case '<':
+            parse_less_sign();
+            break;
         default:
             if (isdigit(m_input[m_cursor]))
             {
@@ -122,13 +125,25 @@ void Tokenizer::parse_exclamation_mark()
 {
     if (m_input[m_cursor + 1] == '=')
     {
-        m_cursor+=2;
-        m_col+=2;
+        m_cursor += 2;
+        m_col += 2;
         m_tokens.emplace_back(make_token("!=", TokenType::OPERATOR));
     }
     else
     {
         exit(1);
+    }
+}
+
+void Tokenizer::parse_less_sign()
+{
+    if (m_input[m_cursor + 1] == '=')
+    {
+        m_cursor += 2;
+        m_col += 2;
+        m_tokens.emplace_back(make_token("<=", TokenType::OPERATOR));
+    } else {
+        m_tokens.emplace_back(with_current_token(TokenType::OPERATOR));
     }
 }
 
