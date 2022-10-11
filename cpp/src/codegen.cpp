@@ -33,10 +33,6 @@ String CodeGenerator::generate()
 
         ctx.text_section.append("\t;; Call entry point\n");
         ctx.text_section.append("\tcall ").append(m_root_class.get()->p_definition.class_name).append("$main\n");
-        ctx.text_section.append("\t;; Exit syscall\n");
-        ctx.text_section.append("\tmov rax, 60\n");
-        ctx.text_section.append("\tmov rdi, 0\n");
-        ctx.text_section.append("\tsyscall\n");
     }
 
     String final_out;
@@ -51,7 +47,6 @@ String CodeGenerator::generate()
 
 bool CodeGenerator::has_main()
 {
-
     for (auto &method : m_root_class.get()->p_methods)
         if (auto method_ = dynamic_cast<const MethodExpression *>(method.get()))
             if (method_->p_definition.arg_name == "main" && method_->p_definition.class_name == "void" && method_->p_definition.mod.is_static && method_->p_definition.mod.is_public)

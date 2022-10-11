@@ -34,7 +34,7 @@ int main(int argc, char **args)
     (void)*args++; // advance program name
     const char *path = *args;
 
-    printf("Loading %s\n", path);
+    //printf("Loading %s\n", path);
 
     Tokenizer tokenizer(read_file_source(path));
     tokenizer.run();

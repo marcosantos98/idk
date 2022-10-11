@@ -107,7 +107,7 @@ String BinaryExpression::code_gen(NAVA::GlobalContext *ctx)
             ctx->text_section.append(buf);
         }
 
-        if (p_op == '+')
+        if (p_op == "+")
         {
             ctx->text_section.append("\tadd eax, edx\n");
             char buf[1024];
@@ -116,7 +116,7 @@ String BinaryExpression::code_gen(NAVA::GlobalContext *ctx)
             ctx->text_section.append(buf);
             ctx->stack_vars[ctx->current_def.arg_name] = {ctx->current_stack_offset, "int"};
         }
-        else if (p_op == '-')
+        else if (p_op == "-")
         {
             ctx->text_section.append("\tsub eax, edx\n");
             char buf[1024];
@@ -125,7 +125,7 @@ String BinaryExpression::code_gen(NAVA::GlobalContext *ctx)
             ctx->text_section.append(buf);
             ctx->stack_vars[ctx->current_def.arg_name] = {ctx->current_stack_offset, "int"};
         }
-        else if (p_op == '*')
+        else if (p_op == "*")
         {
             ctx->text_section.append("\tmul edx\n");
             char buf[1024];
@@ -134,7 +134,7 @@ String BinaryExpression::code_gen(NAVA::GlobalContext *ctx)
             ctx->text_section.append(buf);
             ctx->stack_vars[ctx->current_def.arg_name] = {ctx->current_stack_offset, "int"};
         }
-        else if (p_op == '/')
+        else if (p_op == "/")
         {
             ctx->text_section.append("\tmov ecx, edx\n");
             ctx->text_section.append("\tmov edx, 0\n");
@@ -145,7 +145,7 @@ String BinaryExpression::code_gen(NAVA::GlobalContext *ctx)
             ctx->text_section.append(buf);
             ctx->stack_vars[ctx->current_def.arg_name] = {ctx->current_stack_offset, "int"};
         }
-        else if (p_op == '%')
+        else if (p_op == "%")
         {
             ctx->text_section.append("\tmov ecx, edx\n");
             ctx->text_section.append("\tmov edx, 0\n");
@@ -157,13 +157,10 @@ String BinaryExpression::code_gen(NAVA::GlobalContext *ctx)
             ctx->text_section.append(buf);
             ctx->stack_vars[ctx->current_def.arg_name] = {ctx->current_stack_offset, "int"};
         }
-        else if (p_op == '!=')
+        else if (p_op == "!=" || p_op == "==")
         {
-            ctx->text_section.append("\tsetne al\n");
-            ctx->text_section.append("\tmovsx eax, al\n");
+            ctx->text_section.append("\tcmp eax, edx\n");
             char buf[1024];
-            ctx->current_stack_offset += 4;
-            snprintf(buf, 1024, "\tmov dword [rbp-%ld], eax\n", ctx->current_stack_offset);
             ctx->text_section.append(buf);
             ctx->stack_vars[ctx->current_def.arg_name] = {ctx->current_stack_offset, "int"};
         }
@@ -345,7 +342,7 @@ String CallExpression::code_gen(NAVA::GlobalContext *ctx)
                 else if (auto string = dynamic_cast<const StringLiteralExpression *>(arg.get()))
                 {
                     NAVA::Definition tmp = {
-                        .arg_name = ""+std::to_string(ctx->tmp_str_cnt),
+                        .arg_name = "" + std::to_string(ctx->tmp_str_cnt),
                         .class_name = "tmp_str",
                     };
                     ctx->current_def = tmp;
@@ -430,20 +427,20 @@ Json IfExpression::to_json()
 
 String IfExpression::code_gen(NAVA::GlobalContext *ctx)
 {
-    if(auto number = dynamic_cast<const NumberLiteralExpression*>(p_condition.get()))
+    if (auto number = dynamic_cast<const NumberLiteralExpression *>(p_condition.get()))
     {
-        char buf[1024];
-        snprintf(buf, 1024, "\tmov eax, %d\n\tcmp eax, 1\n", (int)number->p_value);
-        ctx->text_section.append(buf);
-    } 
-    else if(auto binop = dynamic_cast<const BinaryExpression*>(p_condition.get()))
+        ctx->text_section.append("\tmov eax, ").append(std::to_string((int)number->p_value)).append("\n");
+        ctx->text_section.append("\tcmp eax, 1\n");
+        ctx->text_section.append("\tjne ").append(".JL_").append(std::to_string(ctx->label_cnt)).append("\n");
+    }
+    else if (auto binop = dynamic_cast<const BinaryExpression *>(p_condition.get()))
     {
         p_condition.get()->code_gen(ctx);
+        ctx->text_section.append("\tje ").append(".JL_").append(std::to_string(ctx->label_cnt)).append("\n");
     }
 
-    ctx->text_section.append("\tjne ").append(".JL_").append(std::to_string(ctx->label_cnt)).append("\n");
 
-    for(auto &body : p_body)
+    for (auto &body : p_body)
     {
         body.get()->code_gen(ctx);
     }

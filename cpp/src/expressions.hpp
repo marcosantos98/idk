@@ -38,11 +38,11 @@ public:
 class BinaryExpression : public Expression
 {
 public:
-    char p_op;
+    String p_op;
     OwnPtr<Expression> p_lhs;
     OwnPtr<Expression> p_rhs;
 
-    BinaryExpression(char op, OwnPtr<Expression> left, OwnPtr<Expression> right)
+    BinaryExpression(String op, OwnPtr<Expression> left, OwnPtr<Expression> right)
         : p_op(op), p_lhs(move(left)), p_rhs(move(right)) {}
 
     virtual Json to_json() override;

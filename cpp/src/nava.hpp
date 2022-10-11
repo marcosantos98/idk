@@ -45,12 +45,13 @@ namespace NAVA
         "abstract",
     };
 
-    static Map<char, int> op_precedence = {
-        {'+', 20},
-        {'-', 20},
-        {'%', 30},
-        {'*', 30},
-        {'/', 30},
+    static Map<String, int> op_precedence = {
+        {"!=", 10},
+        {"+", 20},
+        {"-", 20},
+        {"%", 30},
+        {"*", 30},
+        {"/", 30},
     };
 
     enum class NumberType

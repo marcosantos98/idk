@@ -50,6 +50,9 @@ void Tokenizer::run()
         case '"':
             parse_string();
             break;
+        case '!':
+            parse_exclamation_mark();
+            break;
         default:
             if (isdigit(m_input[m_cursor]))
             {
@@ -61,7 +64,7 @@ void Tokenizer::run()
             }
             else
             {
-                printf("Unknown char: %c\n", m_input[m_cursor]);
+                printf("Unknown char: %c at %ld:%ld cursor pos %ld\n", m_input[m_cursor], m_row, m_col, m_cursor);
                 m_cursor++;
                 m_col++;
             }
@@ -112,6 +115,20 @@ void Tokenizer::parse_slash()
         m_tokens.emplace_back(make_token({m_input[m_cursor]}, TokenType::OPERATOR));
         m_cursor++;
         m_col++;
+    }
+}
+
+void Tokenizer::parse_exclamation_mark()
+{
+    if (m_input[m_cursor + 1] == '=')
+    {
+        m_cursor+=2;
+        m_col+=2;
+        m_tokens.emplace_back(make_token("!=", TokenType::OPERATOR));
+    }
+    else
+    {
+        exit(1);
     }
 }
 

@@ -131,7 +131,7 @@ OwnPtr<Expression> AST::parse_binary_right_side(int precedence, OwnPtr<Expressio
         if (get_token().type == TokenType::END_OF_FILE)
             return lhs;
 
-        char op = get_token().lex_value[0];
+        String op = get_token().lex_value;
 
         int current_precedence = get_token_precedence();
         if (current_precedence < precedence)
@@ -434,10 +434,10 @@ int AST::get_token_precedence()
     if (!isascii(get_token().lex_value[0]))
         return -1;
 
-    if (!NAVA::op_precedence.contains(get_token().lex_value[0]))
+    if (!NAVA::op_precedence.contains(get_token().lex_value))
         return -1;
 
-    return NAVA::op_precedence[get_token().lex_value[0]];
+    return NAVA::op_precedence[get_token().lex_value];
 }
 
 void AST::do_if_token_lex_pred_and_advance(String lex, std::function<void()> lambda)
