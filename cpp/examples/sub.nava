@@ -1,0 +1,9 @@
+public class Math {
+
+    public static void main() {
+        System.println("Test 500 - 80 (420)", 19);
+        int a = 500 - 80;
+        System.printDec(a);
+        System.exit(0);
+    }
+}

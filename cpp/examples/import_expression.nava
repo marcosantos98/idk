@@ -1,8 +1,0 @@
-import System;
-
-public class Nava {
-
-    public void main() {
-        dbg(10);
-    }
-}

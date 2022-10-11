@@ -1,5 +1,0 @@
-public class Nava {
-
-    public int n = 10;
-    public int ten = n;
-}

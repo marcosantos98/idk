@@ -8,3 +8,6 @@ cpp/.vscode
 cpp/nava/*.asm
 cpp/nava/*.o
 cpp/nava/main
+cpp/examples/*.o
+cpp/examples/main
+cpp/examples/*.asm

@@ -1,0 +1,9 @@
+public class Main {
+
+    public static void main() {
+        System.println("Test 50 * 2 (100)", 17);
+        int a = 50 * 2;
+        System.printDec(a);
+        System.exit(0);
+    }
+}

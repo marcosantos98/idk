@@ -53,6 +53,7 @@ private:
     void parse_number();
     void parse_string();
     void parse_slash();
+    void parse_exclamation_mark();
     void parse_identifier();
     Token make_token(std::string, TokenType);
     Token with_current_token(TokenType);

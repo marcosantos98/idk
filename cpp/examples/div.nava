@@ -1,0 +1,9 @@
+public class Math {
+
+    public static void main() {
+        System.println("Divide 100 / 2 (50)", 19);
+        int a = 100 / 2;
+        System.printDec(a);
+        System.exit(0);
+    }
+}

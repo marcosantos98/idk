@@ -1,0 +1,9 @@
+public class Main {
+
+    public static void main() {
+        System.println("Test 5 % 2 (1)", 14);
+        int a = 5 % 2;
+        System.printDec(a);
+        System.exit(0);
+    }
+}

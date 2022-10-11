@@ -1,0 +1,9 @@
+public class Math {
+
+    public static void main() {
+        System.println("Test 34 + 35 (69)", 17);
+        int a = 34 + 35;
+        System.printDec(a);
+        System.exit(0);
+    }
+}
