@@ -1,4 +1,4 @@
-public class Main {
+public class Multiply {
 
     public static void main() {
         System.println("Test 50 * 2 (100)", 17);

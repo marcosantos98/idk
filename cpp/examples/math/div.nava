@@ -1,4 +1,6 @@
-public class Math {
+package math;
+
+public class Div {
 
     public static void main() {
         System.println("Divide 100 / 2 (50)", 19);

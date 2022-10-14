@@ -1,4 +1,4 @@
-public class Math {
+public class Plus {
 
     public static void main() {
         System.println("Test 34 + 35 (69)", 17);

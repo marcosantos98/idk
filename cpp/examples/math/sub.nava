@@ -1,4 +1,4 @@
-public class Math {
+public class Sub {
 
     public static void main() {
         System.println("Test 500 - 80 (420)", 19);

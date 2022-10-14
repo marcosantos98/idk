@@ -1,4 +1,4 @@
-public class Main {
+public class IfTrue {
 
     public static void main() {
         if(1) {
