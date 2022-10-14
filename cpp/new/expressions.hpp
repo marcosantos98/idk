@@ -12,23 +12,11 @@ public:
     virtual String code_gen(NAVA::GlobalContext *) = 0;
 };
 
-class NumberLiteralExpression : public Expression
-{
-public:
-    double p_value;
-    NAVA::NumberType p_type;
-    NumberLiteralExpression(double val, NAVA::NumberType type)
-        : p_value(val), p_type(type) {}
-
-    virtual Json to_json() override;
-    virtual String code_gen(NAVA::GlobalContext *) override;
-};
-
-class StringLiteralExpression : public Expression
+class ValueExpression : public Expression
 {
 public:
     String p_value;
-    StringLiteralExpression(String val)
+    ValueExpression(String val)
         : p_value(val) {}
 
     virtual Json to_json() override;
@@ -142,10 +130,23 @@ public:
     NAVA::Definition p_definition;
     OwnPtrVec<Expression> p_class_variables;
     OwnPtrVec<Expression> p_methods;
+    OwnPtr<Expression> p_package;
 
-    ClassExpression(NAVA::Definition def, OwnPtrVec<Expression> class_variables, OwnPtrVec<Expression> methods)
-        : p_definition(def), p_class_variables(move(class_variables)), p_methods(move(methods)) {}
+    ClassExpression(NAVA::Definition def, OwnPtrVec<Expression> class_variables, OwnPtrVec<Expression> methods, OwnPtr<Expression> package)
+        : p_definition(def), p_class_variables(move(class_variables)), p_methods(move(methods)), p_package(move(package)) {}
 
     virtual nlohmann::json to_json() override;
+    virtual String code_gen(NAVA::GlobalContext *) override;
+};
+
+class PackageExpression : public Expression
+{
+    public:
+    String p_path;
+
+    PackageExpression(String path)
+        : p_path(path) {}
+
+    virtual Json to_json() override;
     virtual String code_gen(NAVA::GlobalContext *) override;
 };

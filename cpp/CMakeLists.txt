@@ -6,11 +6,21 @@ project(idk CXX)
 
 include_directories(./src)
 
+# add_executable(idk
+#     main.cpp
+#     ./src/tokenizer.cpp
+#     ./src/expressions.cpp
+#     ./src/ast.cpp
+#     ./src/json.hpp
+#     ./src/codegen.cpp
+#     )
 add_executable(idk
-    main.cpp
+    ./new/checker.cpp
+    ./new/x86_64_nasm_linux.cpp
+    ./new/global.cpp    
     ./src/tokenizer.cpp
-    ./src/expressions.cpp
-    ./src/ast.cpp
+    ./new/expressions.cpp
+    ./new/ast.cpp
     ./src/json.hpp
-    ./src/codegen.cpp
+    #./src/codegen.cpp
     )

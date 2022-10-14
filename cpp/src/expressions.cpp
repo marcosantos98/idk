@@ -439,6 +439,40 @@ String IfExpression::code_gen(NAVA::GlobalContext *ctx)
         ctx->text_section.append("\tje ").append(".JL_").append(std::to_string(ctx->label_cnt)).append("\n");
     }
 
+    for (auto &body : p_body)
+    {
+        body.get()->code_gen(ctx);
+    }
+
+    ctx->text_section.append(".JL_").append(std::to_string(ctx->label_cnt++)).append(":\n");
+
+    return "";
+}
+
+Json WhileExpression::to_json()
+{
+    Json json;
+
+    json["type"] = "WhileExpression";
+    json["condition"] = p_condition.get()->to_json();
+
+    Json body_arr = nlohmann::json::array();
+
+    for (auto &expr : p_body)
+        body_arr.emplace_back(expr->to_json());
+
+    json["body"] = body_arr;
+
+    return json;
+}
+
+String WhileExpression::code_gen(NAVA::GlobalContext *ctx)
+{
+    if (auto binop = dynamic_cast<const BinaryExpression *>(p_condition.get()))
+    {
+        p_condition.get()->code_gen(ctx);
+        ctx->text_section.append("\tje ").append(".JL_").append(std::to_string(ctx->label_cnt)).append("\n");
+    }
 
     for (auto &body : p_body)
     {
