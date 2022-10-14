@@ -179,7 +179,7 @@ OwnPtr<IfExpression> AST::parse_if_expression()
     OwnPtrVec<Expression> body = {};
     if (get_token().type == TokenType::LCP)
     {
-        m_current_token++; //Eat {
+        m_current_token++; // Eat {
         while (get_token().type != TokenType::RCP)
         {
             auto expression = parse_expression();
@@ -187,14 +187,44 @@ OwnPtr<IfExpression> AST::parse_if_expression()
         }
 
         m_current_token++; // Eat }
-
-    } else {
+    }
+    else
+    {
         auto b = parse_expression();
         body.emplace_back(move(b));
     }
 
-
     return std::make_unique<IfExpression>(move(parse), move(body));
+}
+
+OwnPtr<WhileExpression> AST::parse_while_expression()
+{
+    m_current_token++; // Eat if
+    m_current_token++; // Eat (
+
+    auto parse = parse_expression();
+
+    m_current_token++; // Eat )
+
+    OwnPtrVec<Expression> body = {};
+    if (get_token().type == TokenType::LCP)
+    {
+        m_current_token++; // Eat {
+        while (get_token().type != TokenType::RCP)
+        {
+            auto expression = parse_expression();
+            body.emplace_back(std::move(expression));
+        }
+
+        m_current_token++; // Eat }
+    }
+    else
+    {
+        auto b = parse_expression();
+        body.emplace_back(move(b));
+    }
+
+    return std::make_unique<WhileExpression>(move(parse), move(body));
 }
 
 OwnPtr<MethodExpression> AST::parse_method_expression(NAVA::Definition def)
@@ -277,9 +307,12 @@ OwnPtr<CallExpression> AST::parse_call_expression()
 OwnPtr<Expression> AST::try_parse_identifier_or_base_type()
 {
 
-    //fixme 22/10/07: Add keywords to remove them from identifiers.
+    // fixme 22/10/07: Add keywords to remove them from identifiers.
     if (get_token().type == TokenType::IDENTIFIER && get_token().lex_value == "if")
         return parse_if_expression();
+
+    if (get_token().type == TokenType::IDENTIFIER && get_token().lex_value == "while")
+        return parse_while_expression();
 
     // fixme 22/10/06: I dont like this approach but it works.
     if (get_token().type == TokenType::IDENTIFIER && m_tokens[m_current_token + 1].type == TokenType::LP)
@@ -287,9 +320,6 @@ OwnPtr<Expression> AST::try_parse_identifier_or_base_type()
 
     if (get_token().type == TokenType::IDENTIFIER && get_token().lex_value == "import")
         return parse_import_expression();
-
-
-
 
     NAVA::Definition def = parse_temp_definition();
 
@@ -305,8 +335,34 @@ OwnPtr<Expression> AST::try_parse_identifier_or_base_type()
     }
     else
     {
-        return parse_variable_expression();
+        if (m_tokens[m_current_token + 1].type == TokenType::OPERATOR)
+        {
+            return parse_variable_math_expression();
+        }
+        else
+        {
+            return parse_variable_expression();
+        }
     }
+}
+
+OwnPtr<Expression> AST::parse_variable_math_expression()
+{
+    auto left = std::make_unique<VariableExpression>(get_token().lex_value);
+    m_current_token++;
+    if (get_token().lex_value == "++")
+    {
+        m_current_token++;
+        m_current_token++;
+        auto right = std::make_unique<NumberLiteralExpression>(1, NAVA::NumberType::INT);
+        return std::make_unique<BinaryExpression>("+", move(left), move(right));
+    }
+    else
+    {
+        return move(left);
+    }
+
+    log_error("This is a AST bug.\n");
 }
 
 NAVA::Definition AST::parse_class_definition(bool is_class_root)

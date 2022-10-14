@@ -20,6 +20,8 @@ void Tokenizer::run()
             m_col++;
             break;
         case '+':
+            parse_plus();
+            break;
         case '-':
         case '%':
         case '*':
@@ -135,6 +137,26 @@ void Tokenizer::parse_exclamation_mark()
     }
 }
 
+void Tokenizer::parse_plus()
+{
+    if (m_input[m_cursor + 1] == '=')
+    {
+        m_cursor += 2;
+        m_col += 2;
+        m_tokens.emplace_back(make_token("+=", TokenType::OPERATOR));
+    }
+    else if (m_input[m_cursor + 1] == '+')
+    {
+        m_cursor += 2;
+        m_col += 2;
+        m_tokens.emplace_back(make_token("++", TokenType::OPERATOR));
+    }
+    else
+    {
+        m_tokens.emplace_back(with_current_token(TokenType::OPERATOR));
+    }
+}
+
 void Tokenizer::parse_less_sign()
 {
     if (m_input[m_cursor + 1] == '=')
@@ -142,7 +164,9 @@ void Tokenizer::parse_less_sign()
         m_cursor += 2;
         m_col += 2;
         m_tokens.emplace_back(make_token("<=", TokenType::OPERATOR));
-    } else {
+    }
+    else
+    {
         m_tokens.emplace_back(with_current_token(TokenType::OPERATOR));
     }
 }

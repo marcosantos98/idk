@@ -47,6 +47,8 @@ namespace NAVA
 
     static Map<String, int> op_precedence = {
         {"!=", 10},
+        {"<=", 10},
+        {"<", 10},
         {"+", 20},
         {"-", 20},
         {"%", 30},

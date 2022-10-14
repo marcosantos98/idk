@@ -41,9 +41,11 @@ private:
     OwnPtr<Expression> parse_binary_right_side(int, OwnPtr<Expression>);
     OwnPtr<VariableDeclarationExpression> parse_variable_declaration_expression(NAVA::Definition);
     OwnPtr<IfExpression> parse_if_expression();
+    OwnPtr<WhileExpression> parse_while_expression();
     OwnPtr<MethodExpression> parse_method_expression(NAVA::Definition);
     OwnPtr<CallExpression> parse_call_expression();
     OwnPtr<Expression> try_parse_identifier_or_base_type();
+    OwnPtr<Expression> parse_variable_math_expression();
     NAVA::Definition parse_class_definition(bool);
     NAVA::Definition parse_definition();
     NAVA::Definition parse_temp_definition();
