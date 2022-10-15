@@ -1,7 +1,6 @@
 #pragma once
 
-#include <vector>
-#include <string>
+#include "nava.hpp"
 
 enum class TokenType
 {
@@ -22,7 +21,7 @@ enum class TokenType
 
 struct Token
 {
-    std::string lex_value;
+    String lex_value;
     TokenType type;
     size_t row;
     size_t col;
@@ -31,20 +30,21 @@ struct Token
 class Tokenizer
 {
 public:
-    Tokenizer(std::string input) : m_input(input) {}
+    Tokenizer(String input, String path) : m_input(input) {}
 
     void run();
     void print_token(Token);
-    std::string tokentype_to_token(TokenType);
+    String tokentype_to_token(TokenType);
 
-    std::vector<Token> get_tokens() const
+    Vec<Token> get_tokens() const
     {
         return m_tokens;
     }
 
 private:
-    std::string m_input;
-    std::vector<Token> m_tokens = {};
+    String m_input;
+    String m_path;
+    Vec<Token> m_tokens = {};
 
     size_t m_cursor = 0;
     size_t m_row = 0;
@@ -57,7 +57,8 @@ private:
     void parse_plus();
     void parse_less_sign();
     void parse_identifier();
-    Token make_token(std::string, TokenType);
+    Token make_token(String, TokenType);
     Token with_current_token(TokenType);
     bool is_eof();
+    void log_error(const char*, ...);
 };

@@ -1,5 +1,7 @@
 #include "tokenizer.hpp"
 
+#include <stdarg.h>
+
 #include "nava.hpp"
 
 void Tokenizer::run()
@@ -87,6 +89,12 @@ void Tokenizer::parse_number()
         m_cursor++;
         m_col++;
     }
+    
+    auto val = m_input.substr(cursor_start, m_cursor - cursor_start);
+
+    if(std::count(val.begin(), val.end(), '.') > 1)
+        log_error("Only allowed one dot per number.\n");
+
     m_tokens.emplace_back(make_token(m_input.substr(cursor_start, m_cursor - cursor_start), TokenType::NUMBER));
 }
 
@@ -247,4 +255,16 @@ std::string Tokenizer::tokentype_to_token(TokenType type)
 bool Tokenizer::is_eof()
 {
     return m_cursor >= m_input.length();
+}
+
+void Tokenizer::log_error(const char *msg, ...)
+{
+    char buffer[4096];
+    va_list args;
+    va_start(args, msg);
+    (void)vsnprintf(buffer, sizeof(buffer), msg, args);
+    va_end(args);
+    printf("\u001b[1m\u001b[31m[Tokenizer:%s]%ld:%ld:\u001b[0m ", m_path.c_str(), m_row, m_col);
+    printf(buffer);
+    exit(1);
 }
