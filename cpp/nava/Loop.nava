@@ -1,0 +1,20 @@
+import System;
+
+public class Loops {
+
+    public static void loopTests() {
+        System.println("Print 0 to 10.", 14);
+        int i = 0;
+        while(i < 10){
+            System.printDec(i);
+            i++;
+        }
+
+        System.println("Print 10 to 0.", 14);
+        int j = 10;
+        while(j > 0) {
+            System.printDec(j);
+            j--;
+        }
+    }
+}

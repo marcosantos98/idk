@@ -1,15 +1,22 @@
 #pragma once
 
 #include <functional>
+#include <tuple>
 
 #include "nava.hpp"
 
 struct Value
 {
     String raw;
+    ValueType type;
     String as_str()
     {
         return raw;
+    }
+
+    uint8_t as_bool()
+    {
+        return raw == "true" ? 1 : 0;
     }
 
     double as_double()
@@ -46,15 +53,72 @@ struct ArgumentDef
     String arg_name;
 };
 
-struct StackVar {
+struct StackVar
+{
     String alias;
     size_t stack_offset;
 };
 
-struct MethodVar {
+enum class MethodExprType
+{
+    VAR,
+    FUNCALL,
+    BINOP,
+    IF,
+    WHILE,
+};
+
+struct MethodExpr;
+
+struct BinopDef
+{
+    Value left;
+    Value rigth;
+    String op;
+};
+
+enum class CondType
+{
+    VAL,
+    BINOP,
+};
+
+struct CondDef
+{
+    Value val;
+    BinopDef binop;
+};
+
+struct WhileDef
+{
+    CondType type;
+    CondDef cond;
+    Vec<MethodExpr> body_expr;
+};
+
+struct IfDef
+{
+    CondType type;
+    CondDef cond;
+    Vec<MethodExpr> body_expr;
+};
+
+struct FuncallDef
+{
+    Vec<Value> args;
+    String ret_type;
+    String call_name;
+};
+
+struct MethodExpr
+{
     bool is_final = false;
-    VariableDef var_def;
-    StackVar stack_var;
+    MethodExprType type;
+    std::tuple<VariableDef, StackVar> var_def;
+    FuncallDef func_def;
+    BinopDef binop_def;
+    IfDef if_def;
+    WhileDef while_def;
 };
 
 struct MethodDef
@@ -65,7 +129,7 @@ struct MethodDef
     String return_type;
     String method_name;
     Vec<ArgumentDef> args;
-    Vec<MethodVar> stack_vars;
+    Vec<MethodExpr> method_expressions;
     size_t stack_offset;
 };
 
@@ -73,11 +137,13 @@ struct ClassDef
 {
     Vec<MethodDef> class_methods = {};
     Vec<VariableDef> class_variables = {};
+    Vec<String> imports = {};
     String in_file;
 };
 
 struct Project
 {
-    String main_class = "$GlobalVar";
+    String main_class = "";
+    String root_path;
     Map<String, ClassDef> project_classes = {};
 };

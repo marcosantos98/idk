@@ -55,7 +55,9 @@ private:
     void parse_slash();
     void parse_exclamation_mark();
     void parse_plus();
+    void parse_minus();
     void parse_less_sign();
+    void parse_greater_sign();
     void parse_identifier();
     Token make_token(String, TokenType);
     Token with_current_token(TokenType);

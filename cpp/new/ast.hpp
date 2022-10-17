@@ -36,7 +36,8 @@ private:
     OwnPtr<ImportExpression> parse_import_expression();
     OwnPtr<PackageExpression> parse_package_expression();
     OwnPtr<ValueExpression> parse_value_expression();
-    OwnPtr<VariableExpression> parse_variable_expression();
+    OwnPtr<ValueExpression> parse_variable_expression();
+    OwnPtr<ValueExpression> parse_bool_expression();
     OwnPtr<Expression> parse_parentisis_expression();
     OwnPtr<Expression> parse_binary_right_side(int, OwnPtr<Expression>);
     OwnPtr<VariableDeclarationExpression> parse_variable_declaration_expression(NAVA::Definition);

@@ -1,11 +1,56 @@
 #include "checker.hpp"
 
 #include <stdarg.h>
+#include <string_view>
+#include <ranges>
 
 #include "nava.hpp"
 
+Vec<String> string_split(String str, char del)
+{
+    Vec<String> words = {};
+
+    int i = 0;
+
+    String tmp;
+
+    while (str[i])
+    {
+        if (str[i] != del)
+        {
+            tmp.append({str[i]});
+        }
+        else
+        {
+            words.emplace_back(tmp);
+            tmp = "";
+        }
+        i++;
+    }
+
+    words.emplace_back(tmp);
+
+    return words;
+}
+
+void Checker::find_and_set_main()
+{
+    for(auto classs : m_project->project_classes)
+    {
+        for(auto method : classs.second.class_methods)
+        {
+            if(method.is_static && method.is_public && method.return_type == "void" && method.method_name == "main")
+            {
+                m_project->main_class = classs.first;
+                break;
+            }
+        }
+    }
+}
+
 void Checker::start_checking()
 {
+    find_and_set_main();
     for (auto classs : m_project->project_classes)
     {
         m_current_path = classs.second.in_file;
@@ -15,6 +60,20 @@ void Checker::start_checking()
             if (variables.class_name == "int" || variables.class_name == "double" || variables.class_name == "long")
             {
                 check_numbers(variables);
+            }
+        }
+
+        for (auto method : classs.second.class_methods)
+        {
+            for (auto method_expr : method.method_expressions)
+            {
+                if (method_expr.type == MethodExprType::FUNCALL && method_expr.func_def.call_name != "asm")
+                {
+                    if (VEC_HAS(classs.second.imports, string_split(method_expr.func_def.call_name, '.')[0]))
+                        continue;
+                    else
+                        log_error("Class doesn't import %s\n", string_split(method_expr.func_def.call_name, '.')[0].c_str());
+                }
             }
         }
     }

@@ -16,6 +16,8 @@ include_directories(./src)
 #     )
 add_executable(idk
     ./new/checker.cpp
+    ./new/str_helper.cpp
+    ./new/x86_64_helper.cpp
     ./new/x86_64_nasm_linux.cpp
     ./new/global.cpp    
     ./src/tokenizer.cpp

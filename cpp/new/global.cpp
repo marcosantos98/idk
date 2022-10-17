@@ -5,6 +5,7 @@
 #include <fstream>
 #include <iostream>
 #include <sstream>
+#include <filesystem>
 
 #include "tokenizer.hpp"
 #include "ast.hpp"
@@ -36,6 +37,40 @@ String read_file_source(const char *file_path)
     return str;
 }
 
+MethodExpr parse_binop(const BinaryExpression *binop)
+{
+
+    BinopDef def;
+
+    auto left = static_cast<const ValueExpression *>(binop->p_lhs.get());
+
+    printf("left %s %d\n", left->p_value.c_str(), left->p_type);
+
+    Value left_val;
+    left_val.raw = left->p_value;
+    left_val.type = left->p_type;
+
+    auto right = static_cast<const ValueExpression *>(binop->p_rhs.get());
+
+    printf("right %s %d\n", right->p_value.c_str(), right->p_type);
+
+    Value right_val;
+    right_val.raw = right->p_value;
+    right_val.type = right->p_type;
+
+    def.left = left_val;
+    def.rigth = right_val;
+
+    def.op = binop->p_op;
+
+    MethodExpr method_expr;
+    method_expr.is_final = false;
+    method_expr.binop_def = def;
+    method_expr.type = MethodExprType::BINOP;
+
+    return method_expr;
+}
+
 Vec<String> glob_with_ext(const std::string &path, const char *ext)
 {
     Vec<String> paths;
@@ -59,6 +94,7 @@ void parse_input(Project *project, String file_path, String input)
     ast.parse();
 
     auto root = move(ast.get_root_class());
+    auto imports = move(ast.get_imports());
     // printf("%s\n", root.get()->to_json().dump(4).c_str());
 
     String package = "";
@@ -74,6 +110,14 @@ void parse_input(Project *project, String file_path, String input)
 
     Vec<VariableDef> class_variables_def = {};
     Vec<MethodDef> class_methods_def = {};
+    Vec<String> class_imports = {};
+
+    for (auto &imp : imports)
+    {
+        auto import = static_cast<const ImportExpression *>(imp.get());
+
+        class_imports.emplace_back(import->p_path);
+    }
 
     for (auto &expr : root.get()->p_class_variables)
     {
@@ -90,6 +134,7 @@ void parse_input(Project *project, String file_path, String input)
 
         Value val;
         val.raw = value->p_value;
+        val.type = value->p_type;
         def.val = val;
 
         class_variables_def.emplace_back(def);
@@ -119,36 +164,223 @@ void parse_input(Project *project, String file_path, String input)
             method_args.emplace_back(arg_def);
         }
 
-        Vec<MethodVar> stack_vars = {};
+        Vec<MethodExpr> stack_vars = {};
 
         for (auto &body_expr : method->p_body)
         {
             if (auto var_expr = dynamic_cast<const VariableDeclarationExpression *>(body_expr.get()))
             {
+
                 VariableDef var_def;
                 var_def.arg_name = var_expr->p_definition.arg_name;
                 var_def.class_name = var_expr->p_definition.class_name;
-                auto value = static_cast<const ValueExpression *>(var_expr->p_value.get());
 
-                Value val;
-                val.raw = value->p_value;
-                var_def.val = val;
+                size_t type_offset = NAVA::primitive_byte_sizes[var_def.class_name];
+                def.stack_offset += type_offset;
 
                 StackVar var;
                 var.alias = var_expr->p_definition.arg_name;
                 var.stack_offset = def.stack_offset;
 
+                if (auto value = dynamic_cast<const ValueExpression *>(var_expr->p_value.get()))
+                {
 
-                MethodVar method_var_def;
-                method_var_def.is_final = false; //fixme 22/10/14: This should be handled.
-                method_var_def.stack_var = var;
-                method_var_def.var_def = var_def;
+                    Value val;
+                    val.raw = value->p_value;
+                    val.type = value->p_type;
+                    var_def.val = val;
 
-                stack_vars.emplace_back(method_var_def);
+                    // fixme 22/10/15: Check if is a primitive before retrieving the actual value.
+
+                    MethodExpr method_var_def;
+                    method_var_def.type = MethodExprType::VAR;
+                    method_var_def.is_final = false; // fixme 22/10/14: This should be handled.
+                    method_var_def.var_def = std::make_tuple(var_def, var);
+
+                    stack_vars.emplace_back(method_var_def);
+                }
+                else if (auto binop = dynamic_cast<const BinaryExpression *>(var_expr->p_value.get()))
+                {
+                    MethodExpr expr = parse_binop(binop);
+                    expr.var_def = std::make_tuple(var_def, var);
+                    stack_vars.emplace_back(expr);
+                }
+            }
+            else if (auto call_expr = dynamic_cast<const CallExpression *>(body_expr.get()))
+            {
+                FuncallDef funcall_def;
+                funcall_def.call_name = call_expr->p_method_name;
+                funcall_def.ret_type = "void"; // fixme 22/10/15: Implement this.
+
+                Vec<Value> arguments = {};
+
+                for (auto &arg : call_expr->p_args)
+                {
+                    // fixme 22/10/15: This should check what is the type of the expression
+                    auto val_exp = static_cast<const ValueExpression *>(arg.get());
+
+                    Value val;
+                    val.raw = val_exp->p_value;
+                    val.type = val_exp->p_type;
+
+                    arguments.emplace_back(val);
+                }
+
+                funcall_def.args = arguments;
+
+                MethodExpr method_exp;
+                method_exp.is_final = false;
+                method_exp.type = MethodExprType::FUNCALL;
+                method_exp.func_def = funcall_def;
+
+                stack_vars.emplace_back(method_exp);
+            }
+            else if (auto if_exp = dynamic_cast<const IfExpression *>(body_expr.get()))
+            {
+                IfDef if_def;
+
+                if (auto val_exp = dynamic_cast<const ValueExpression *>(if_exp->p_condition.get()))
+                {
+                    Value val;
+                    val.raw = val_exp->p_value;
+                    val.type = val_exp->p_type;
+
+                    CondDef def;
+                    def.val = val;
+
+                    if_def.cond = def;
+                    if_def.type = CondType::VAL;
+                }
+                else if (auto binop_exp = dynamic_cast<const BinaryExpression *>(if_exp->p_condition.get()))
+                {
+                    auto exp = parse_binop(binop_exp);
+                    CondDef def;
+                    def.binop = exp.binop_def;
+                    if_def.type = CondType::BINOP;
+                    if_def.cond = def;
+                }
+
+                Vec<MethodExpr> body = {};
+
+                for (auto &exp : if_exp->p_body)
+                {
+                    if (auto call_expr = dynamic_cast<const CallExpression *>(exp.get()))
+                    {
+                        FuncallDef funcall_def;
+                        funcall_def.call_name = call_expr->p_method_name;
+                        funcall_def.ret_type = "void"; // fixme 22/10/15: Implement this.
+
+                        Vec<Value> arguments = {};
+
+                        for (auto &arg : call_expr->p_args)
+                        {
+                            // fixme 22/10/15: This should check what is the type of the expression
+                            auto val_exp = static_cast<const ValueExpression *>(arg.get());
+
+                            Value val;
+                            val.raw = val_exp->p_value;
+                            val.type = val_exp->p_type;
+
+                            arguments.emplace_back(val);
+                        }
+
+                        funcall_def.args = arguments;
+
+                        MethodExpr method_exp;
+                        method_exp.is_final = false;
+                        method_exp.type = MethodExprType::FUNCALL;
+                        method_exp.func_def = funcall_def;
+
+                        body.emplace_back(method_exp);
+                    }
+                }
+
+                if_def.body_expr = body;
+
+                MethodExpr method_expr;
+                method_expr.is_final = false;
+                method_expr.type = MethodExprType::IF;
+                method_expr.if_def = if_def;
+
+                stack_vars.emplace_back(method_expr);
+            }
+            else if (auto while_exp = dynamic_cast<const WhileExpression *>(body_expr.get()))
+            {
+
+                WhileDef while_def;
+
+                if (auto val_exp = dynamic_cast<const ValueExpression *>(while_exp->p_condition.get()))
+                {
+                    Value val;
+                    val.raw = val_exp->p_value;
+                    val.type = val_exp->p_type;
+
+                    CondDef def;
+                    def.val = val;
+
+                    while_def.cond = def;
+                    while_def.type = CondType::VAL;
+                }
+                else if (auto binop_exp = dynamic_cast<const BinaryExpression *>(while_exp->p_condition.get()))
+                {
+                    auto exp = parse_binop(binop_exp);
+                    CondDef def;
+                    def.binop = exp.binop_def;
+                    while_def.type = CondType::BINOP;
+                    while_def.cond = def;
+                }
+
+                Vec<MethodExpr> body = {};
+
+                for (auto &exp : while_exp->p_body)
+                {
+                    if (auto call_expr = dynamic_cast<const CallExpression *>(exp.get()))
+                    {
+                        FuncallDef funcall_def;
+                        funcall_def.call_name = call_expr->p_method_name;
+                        funcall_def.ret_type = "void"; // fixme 22/10/15: Implement this.
+
+                        Vec<Value> arguments = {};
+
+                        for (auto &arg : call_expr->p_args)
+                        {
+                            // fixme 22/10/15: This should check what is the type of the expression
+                            auto val_exp = static_cast<const ValueExpression *>(arg.get());
+
+                            Value val;
+                            val.raw = val_exp->p_value;
+                            val.type = val_exp->p_type;
+
+                            arguments.emplace_back(val);
+                        }
+
+                        funcall_def.args = arguments;
+
+                        MethodExpr method_exp;
+                        method_exp.is_final = false;
+                        method_exp.type = MethodExprType::FUNCALL;
+                        method_exp.func_def = funcall_def;
+
+                        body.emplace_back(method_exp);
+                    }
+                    else if (auto binop_expr = dynamic_cast<const BinaryExpression *>(exp.get()))
+                    {
+                        auto expr = parse_binop(binop_expr);
+                        body.emplace_back(expr);
+                    }
+                }
+
+                while_def.body_expr = body;
+
+                MethodExpr method_expr;
+                method_expr.type = MethodExprType::WHILE;
+                method_expr.while_def = while_def;
+
+                stack_vars.emplace_back(method_expr);
             }
         }
 
-        def.stack_vars = stack_vars;
+        def.method_expressions = stack_vars;
         def.args = method_args;
 
         for (auto method_def : class_methods_def)
@@ -163,6 +395,7 @@ void parse_input(Project *project, String file_path, String input)
     ClassDef def = {
         .class_methods = class_methods_def,
         .class_variables = class_variables_def,
+        .imports = class_imports,
         .in_file = file_path,
     };
 
@@ -171,36 +404,113 @@ void parse_input(Project *project, String file_path, String input)
 
 int main(int argc, char **argv)
 {
-    (void)argc;
+
     (void)*argv++; // advance program name
+
+    bool single_src = false;
+
+    if (argc > 2)
+    {
+        if (strcmp(*argv++, "-s") == 0)
+        {
+            single_src = true;
+        }
+    }
+
     const char *path = *argv;
 
     Project project;
 
-    // for (auto globpath : glob_with_ext(path, ".nava"))
-    // {
-    //     parse_input(&project, globpath, read_file_source(globpath.c_str()));
-    // }
-
-    parse_input(&project, "../examples/global_var.nava", read_file_source("../examples/global_var.nava"));
+    if (single_src)
+    {
+        parse_input(&project, path, read_file_source(path));
+    }
+    else
+    {
+        project.root_path = path;
+        for (auto globpath : glob_with_ext(path, ".nava"))
+        {
+            parse_input(&project, globpath, read_file_source(globpath.c_str()));
+        }
+    }
 
     for (auto clazz : project.project_classes)
     {
         printf("Class %s:\n", clazz.first.c_str());
+        for (auto imp : clazz.second.imports)
+        {
+            printf("\tImport:%s\n", imp.c_str());
+        }
         for (auto var_def : clazz.second.class_variables)
         {
-            printf("\tVarName:%s, VarClass:%s VarValueRaw:%s\n",
-                   var_def.arg_name.c_str(), var_def.class_name.c_str(), var_def.val.raw.c_str());
+            printf("\tVarName:%s, VarClass:%s VarValueRaw:%s, VarValueType:%d\n",
+                   var_def.arg_name.c_str(), var_def.class_name.c_str(), var_def.val.raw.c_str(), var_def.val.type);
         }
         for (auto method_def : clazz.second.class_methods)
         {
             printf("\tMethodName:%s, RetType:%s ArgCount:%ld\n",
                    method_def.method_name.c_str(), method_def.return_type.c_str(), method_def.args.size());
-            for (auto var : method_def.stack_vars)
+            for (auto var : method_def.method_expressions)
             {
-                printf("\t\tVarName:%s, VarClass:%s VarValueRaw:%s\n",
-                   var.var_def.arg_name.c_str(), var.var_def.class_name.c_str(), var.var_def.val.raw.c_str());
-                printf("\t\t\tStackVar:%s Offset:%ld\n", var.stack_var.alias.c_str(), var.stack_var.stack_offset);
+                if (var.type == MethodExprType::VAR)
+                {
+                    printf("\t\tVarName:%s, VarClass:%s VarValueRaw:%s VarValueType:%d\n",
+                           std::get<0>(var.var_def).arg_name.c_str(), std::get<0>(var.var_def).class_name.c_str(), std::get<0>(var.var_def).val.raw.c_str(), std::get<0>(var.var_def).val.type);
+                    printf("\t\t\tStackVar:%s Offset:%ld\n", std::get<1>(var.var_def).alias.c_str(), std::get<1>(var.var_def).stack_offset);
+                }
+                else if (var.type == MethodExprType::BINOP)
+                {
+                    printf("\t\tVarName:%s, VarClass:%s\n",
+                           std::get<0>(var.var_def).arg_name.c_str(), std::get<0>(var.var_def).class_name.c_str(), std::get<0>(var.var_def).val.raw.c_str());
+                    printf("\t\t\tLeftValueRaw:%s OP:%s RightValueRaw:%s\n", var.binop_def.left.raw.c_str(), var.binop_def.op.c_str(), var.binop_def.rigth.raw.c_str());
+                    printf("\t\t\tStackVar:%s Offset:%ld\n", std::get<1>(var.var_def).alias.c_str(), std::get<1>(var.var_def).stack_offset);
+                }
+                else if (var.type == MethodExprType::FUNCALL)
+                {
+                    printf("\t\tMethodCall:%s\n", var.func_def.call_name.c_str());
+                    for (auto val_arg : var.func_def.args)
+                    {
+                        if (var.func_def.call_name != "asm")
+                            printf("\t\t\tArg:%s Type:%d\n", val_arg.raw.c_str(), val_arg.type);
+                        else
+                            printf("\t\t\tArg: <assembly_code>\n");
+                    }
+                }
+                else if (var.type == MethodExprType::IF)
+                {
+                    if (var.if_def.type == CondType::VAL)
+                        printf("\t\tIfExpressionCond:%s\n", var.if_def.cond.val.raw.c_str());
+                    else
+                        printf("\t\t\tIfExpressionCond: LeftValueRaw:%s OP:%s RightValueRaw:%s\n", var.if_def.cond.binop.left.raw.c_str(), var.if_def.cond.binop.op.c_str(), var.if_def.cond.binop.rigth.raw.c_str());
+                }
+                else if (var.type == MethodExprType::WHILE)
+                {
+                    if (var.while_def.type == CondType::VAL)
+                        printf("\tWhileExpressionCond:%s\n", var.while_def.cond.val.raw.c_str());
+                    else
+                        printf("\t\tWhileExpressionCond: LeftValueRaw:%s OP:%s RightValueRaw:%s\n", var.while_def.cond.binop.left.raw.c_str(), var.while_def.cond.binop.op.c_str(), var.while_def.cond.binop.rigth.raw.c_str());
+                    for (auto e : var.while_def.body_expr)
+                    {
+                        if (e.type == MethodExprType::FUNCALL)
+                        {
+                            printf("\t\t\tMethodCall:%s\n", e.func_def.call_name.c_str());
+                            for (auto val_arg : e.func_def.args)
+                            {
+                                if (e.func_def.call_name != "asm")
+                                    printf("\t\t\t\tArg:%s Type:%d\n", val_arg.raw.c_str(), val_arg.type);
+                                else
+                                    printf("\t\t\t\tArg: <assembly_code>\n");
+                            }
+                        }
+                        else if (e.type == MethodExprType::BINOP)
+                        {
+                            printf("\t\t\tVarName:%s, VarClass:%s\n",
+                                   std::get<0>(e.var_def).arg_name.c_str(), std::get<0>(e.var_def).class_name.c_str(), std::get<0>(e.var_def).val.raw.c_str());
+                            printf("\t\t\t\tLeftValueRaw:%s OP:%s RightValueRaw:%s\n", e.binop_def.left.raw.c_str(), e.binop_def.op.c_str(), e.binop_def.rigth.raw.c_str());
+                            printf("\t\t\t\tStackVar:%s Offset:%ld\n", std::get<1>(e.var_def).alias.c_str(), std::get<1>(e.var_def).stack_offset);
+                        }
+                    }
+                }
             }
         }
     }

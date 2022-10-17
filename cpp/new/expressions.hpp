@@ -16,8 +16,9 @@ class ValueExpression : public Expression
 {
 public:
     String p_value;
-    ValueExpression(String val)
-        : p_value(val) {}
+    ValueType p_type;
+    ValueExpression(String val, ValueType type)
+        : p_value(val), p_type(type) {}
 
     virtual Json to_json() override;
     virtual String code_gen(NAVA::GlobalContext *) override;

@@ -113,16 +113,32 @@ OwnPtr<PackageExpression> AST::parse_package_expression()
 
 OwnPtr<ValueExpression> AST::parse_value_expression()
 {
+    ValueType type;
+    if (get_token().type == TokenType::NUMBER)
+        type = ValueType::NUMBER;
+    else if (get_token().type == TokenType::STRING)
+        type = ValueType::STRING;
+    else if (get_token().type == TokenType::IDENTIFIER)
+        type = ValueType::VAR_REF;
+    else 
+        log_error("Invalid token for a value expression.\n");
     String val = get_token().lex_value;
     m_current_token++;
-    return std::make_unique<ValueExpression>(val);
+    return std::make_unique<ValueExpression>(val, type);
 }
 
-OwnPtr<VariableExpression> AST::parse_variable_expression()
+OwnPtr<ValueExpression> AST::parse_bool_expression()
 {
     String val = get_token().lex_value;
     m_current_token++;
-    return std::make_unique<VariableExpression>(val);
+    return std::make_unique<ValueExpression>(val, ValueType::BOOL);
+}
+
+OwnPtr<ValueExpression> AST::parse_variable_expression()
+{
+    String val = get_token().lex_value;
+    m_current_token++;
+    return std::make_unique<ValueExpression>(val, ValueType::VAR_REF);
 }
 
 OwnPtr<Expression> AST::parse_parentisis_expression()
@@ -323,6 +339,9 @@ OwnPtr<Expression> AST::try_parse_identifier_or_base_type()
     if (get_token().type == TokenType::IDENTIFIER && get_token().lex_value == "while")
         return parse_while_expression();
 
+    if (get_token().type == TokenType::IDENTIFIER && (get_token().lex_value == "true" || get_token().lex_value == "false"))
+        return parse_bool_expression();
+
     // fixme 22/10/06: I dont like this approach but it works.
     if (get_token().type == TokenType::IDENTIFIER && m_tokens[m_current_token + 1].type == TokenType::LP)
         return parse_call_expression();
@@ -359,14 +378,21 @@ OwnPtr<Expression> AST::try_parse_identifier_or_base_type()
 
 OwnPtr<Expression> AST::parse_variable_math_expression()
 {
-    auto left = std::make_unique<VariableExpression>(get_token().lex_value);
+    auto left = std::make_unique<ValueExpression>(get_token().lex_value, ValueType::VAR_REF);
     m_current_token++;
     if (get_token().lex_value == "++")
     {
         m_current_token++;
         m_current_token++;
-        auto right = std::make_unique<ValueExpression>(std::to_string(1));
+        auto right = std::make_unique<ValueExpression>(std::to_string(1), ValueType::NUMBER);
         return std::make_unique<BinaryExpression>("+", move(left), move(right));
+    }
+    else if (get_token().lex_value == "--")
+    {
+        m_current_token++;
+        m_current_token++;
+        auto right = std::make_unique<ValueExpression>(std::to_string(1), ValueType::NUMBER);
+        return std::make_unique<BinaryExpression>("-", move(left), move(right));
     }
     else
     {

@@ -26,10 +26,19 @@ using String = std::string;
 
 using Json = nlohmann::json;
 
+
+enum class ValueType {
+    STRING,
+    NUMBER,
+    BOOL,
+    VAR_REF
+};
+
 namespace NAVA
 {
     static Map<String, int> primitive_byte_sizes = {
         {"int", 4},
+        {"boolean", 4}
     };
 
     static Vec<String> base_types = {
@@ -49,6 +58,8 @@ namespace NAVA
         {"!=", 10},
         {"<=", 10},
         {"<", 10},
+        {">=", 10},
+        {">", 10},
         {"+", 20},
         {"-", 20},
         {"%", 30},
