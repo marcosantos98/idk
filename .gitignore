@@ -1,6 +1,7 @@
 build
 examples/build
 .vscode
+examples/main
 
 
 
