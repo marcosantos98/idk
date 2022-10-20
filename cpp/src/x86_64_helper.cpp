@@ -30,6 +30,11 @@ void mov_reg_mX(String *out, String const &primitive, size_t offset, const char 
     {
         string_format(out, "\tmov %s, dword [rbp-%ld]\n", reg, offset);
     }
+    else
+    {
+        printf("Unknown primitive! %s\n", primitive.c_str());
+        exit(1);
+    }
 }
 
 void mov_reg_immX(String *out, String const &primitive, const char *reg, Value val)
@@ -45,6 +50,22 @@ void mov_reg_immX(String *out, String const &primitive, const char *reg, Value v
     else if (primitive == "int")
     {
         string_format(out, "\tmov %s, %d\n", reg, val.as_int());
+    }
+}
+
+void mov_mX_immX(String *out, String const &primitive, size_t stack_offset, Value val)
+{
+    if (primitive == "boolean")
+    {
+        string_format(out, "\tmov byte [rbp-%ld], %d\n", stack_offset, val.as_bool());
+    }
+    else if (primitive == "short")
+    {
+        string_format(out, "\tmov word [rbp-%ld], %d\n", stack_offset, val.as_int());
+    }
+    else if (primitive == "int")
+    {
+        string_format(out, "\tmov dword [rbp-%ld], %d\n", stack_offset, val.as_int());
     }
 }
 

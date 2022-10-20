@@ -8,6 +8,11 @@ public class While {
             System.printDec(i);
             i++;
         }
+        int j = 10;
+        while(i > 0) {
+            System.printDec(i);
+            i--;
+        }
         System.exit(0);
     }
 }

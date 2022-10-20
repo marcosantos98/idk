@@ -4,6 +4,8 @@
 
 #include "nava.hpp"
 
+Vec<String> chop_delimiter(String const&, char);
+
 #ifndef STR_FORMAT
 #define STR_FORMAT
 

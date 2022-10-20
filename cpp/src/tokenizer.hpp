@@ -30,7 +30,7 @@ struct Token
 class Tokenizer
 {
 public:
-    Tokenizer(String input, String path) : m_input(input) {}
+    Tokenizer(String input, String path) : m_input(input), m_path(path) {}
 
     void run();
     void print_token(Token);

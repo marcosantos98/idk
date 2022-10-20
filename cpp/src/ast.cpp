@@ -5,12 +5,16 @@
 void AST::parse()
 {
 
+    OwnPtr<Expression> package;
+
     while (get_token().type != TokenType::BASE_TYPE && get_token().type != TokenType::MODIFIER)
     {
         auto expr = parse_expression();
 
         if (dynamic_cast<const ImportExpression *>(expr.get()) != nullptr)
             m_imports.emplace_back(std::move(expr));
+        else if (dynamic_cast<const PackageExpression *>(expr.get()) != nullptr)
+            package = move(expr);
     }
 
     NAVA::Definition class_def = parse_class_definition(true);
@@ -32,7 +36,7 @@ void AST::parse()
 
     m_current_token++;
 
-    m_root_class = std::make_unique<ClassExpression>(class_def, std::move(class_expressions), std::move(method_expressions));
+    m_root_class = std::make_unique<ClassExpression>(class_def, std::move(class_expressions), std::move(method_expressions), std::move(package));
 
     // auto &val = m_root_class;
 
@@ -47,13 +51,12 @@ OwnPtr<Expression> AST::parse_primary()
     switch (get_token().type)
     {
     case TokenType::NUMBER:
-        return parse_number_literal_expression();
+    case TokenType::STRING:
+        return parse_value_expression();
     case TokenType::IDENTIFIER:
     case TokenType::BASE_TYPE:
     case TokenType::MODIFIER:
         return try_parse_identifier_or_base_type();
-    case TokenType::STRING:
-        return parse_string_literal_expression();
     case TokenType::LP:
         return parse_parentisis_expression();
     default:
@@ -89,31 +92,53 @@ OwnPtr<ImportExpression> AST::parse_import_expression()
     return std::make_unique<ImportExpression>(path);
 }
 
-OwnPtr<NumberLiteralExpression> AST::parse_number_literal_expression()
+OwnPtr<PackageExpression> AST::parse_package_expression()
 {
-    NAVA::NumberType type;
+    m_current_token++; // Eat package
 
-    if (get_token().lex_value.find('.') != std::string::npos)
-        type = NAVA::NumberType::DOUBLE;
-    else
-        type = NAVA::NumberType::INT;
-    double val = std::stod(get_token().lex_value);
-    m_current_token++;
-    return std::make_unique<NumberLiteralExpression>(val, type);
+    String path = "";
+
+    while (get_token().type != TokenType::SEMI_COLON)
+    {
+        path.append(get_token().lex_value).append(".");
+        m_current_token++;
+    }
+
+    m_current_token++; // Eat ;
+
+    path = path.substr(0, path.length() - 1);
+
+    return std::make_unique<PackageExpression>(path);
 }
 
-OwnPtr<StringLiteralExpression> AST::parse_string_literal_expression()
+OwnPtr<ValueExpression> AST::parse_value_expression()
+{
+    ValueType type;
+    if (get_token().type == TokenType::NUMBER)
+        type = ValueType::NUMBER;
+    else if (get_token().type == TokenType::STRING)
+        type = ValueType::STRING;
+    else if (get_token().type == TokenType::IDENTIFIER)
+        type = ValueType::VAR_REF;
+    else 
+        log_error("Invalid token for a value expression.\n");
+    String val = get_token().lex_value;
+    m_current_token++;
+    return std::make_unique<ValueExpression>(val, type);
+}
+
+OwnPtr<ValueExpression> AST::parse_bool_expression()
 {
     String val = get_token().lex_value;
     m_current_token++;
-    return std::make_unique<StringLiteralExpression>(val);
+    return std::make_unique<ValueExpression>(val, ValueType::BOOL);
 }
 
-OwnPtr<VariableExpression> AST::parse_variable_expression()
+OwnPtr<ValueExpression> AST::parse_variable_expression()
 {
     String val = get_token().lex_value;
     m_current_token++;
-    return std::make_unique<VariableExpression>(val);
+    return std::make_unique<ValueExpression>(val, ValueType::VAR_REF);
 }
 
 OwnPtr<Expression> AST::parse_parentisis_expression()
@@ -314,12 +339,17 @@ OwnPtr<Expression> AST::try_parse_identifier_or_base_type()
     if (get_token().type == TokenType::IDENTIFIER && get_token().lex_value == "while")
         return parse_while_expression();
 
+    if (get_token().type == TokenType::IDENTIFIER && (get_token().lex_value == "true" || get_token().lex_value == "false"))
+        return parse_bool_expression();
+
     // fixme 22/10/06: I dont like this approach but it works.
     if (get_token().type == TokenType::IDENTIFIER && m_tokens[m_current_token + 1].type == TokenType::LP)
         return parse_call_expression();
 
     if (get_token().type == TokenType::IDENTIFIER && get_token().lex_value == "import")
         return parse_import_expression();
+    else if (get_token().type == TokenType::IDENTIFIER && get_token().lex_value == "package")
+        return parse_package_expression();
 
     NAVA::Definition def = parse_temp_definition();
 
@@ -348,21 +378,29 @@ OwnPtr<Expression> AST::try_parse_identifier_or_base_type()
 
 OwnPtr<Expression> AST::parse_variable_math_expression()
 {
-    auto left = std::make_unique<VariableExpression>(get_token().lex_value);
+    auto left = std::make_unique<ValueExpression>(get_token().lex_value, ValueType::VAR_REF);
     m_current_token++;
     if (get_token().lex_value == "++")
     {
         m_current_token++;
         m_current_token++;
-        auto right = std::make_unique<NumberLiteralExpression>(1, NAVA::NumberType::INT);
-        return std::make_unique<BinaryExpression>("+", move(left), move(right));
+        auto right = std::make_unique<ValueExpression>(std::to_string(1), ValueType::NUMBER);
+        return std::make_unique<BinaryExpression>("++", move(left), move(right));
+    }
+    else if (get_token().lex_value == "--")
+    {
+        m_current_token++;
+        m_current_token++;
+        auto right = std::make_unique<ValueExpression>(std::to_string(1), ValueType::NUMBER);
+        return std::make_unique<BinaryExpression>("--", move(left), move(right));
     }
     else
     {
-        return move(left);
+        return left;
     }
 
     log_error("This is a AST bug.\n");
+    return nullptr;
 }
 
 NAVA::Definition AST::parse_class_definition(bool is_class_root)
@@ -513,6 +551,6 @@ void AST::log_error(const char *msg, ...)
     (void)vsnprintf(buffer, sizeof(buffer), msg, args);
     va_end(args);
     printf("\u001b[1m\u001b[31m[AST:%s]%ld:%ld:\u001b[0m ", m_file_path.c_str(), get_token().row, get_token().col);
-    printf(buffer);
+    printf("%s", buffer);
     exit(1);
 }

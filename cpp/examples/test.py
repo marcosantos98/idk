@@ -1,57 +1,72 @@
 #!/usr/bin/python
 
+from genericpath import isdir
 import glob;
 import subprocess;
 import sys;
 import os;
 
-IDK="../build/idk"
+IDK="../build/nava"
 
 def compile(path: str):
-    subprocess.call([IDK, "./" + path])
-    subprocess.call([IDK, "./Debug.nava"])
-    subprocess.call(["nasm", "-felf64", path.split('.')[0] + ".asm"])
-    subprocess.call(["nasm", "-felf64", "Debug.asm"])
-    s = "ld -o main " + path.split('.')[0] + ".o Debug.o" 
-    subprocess.call(["sh", "-c", s])
+    subprocess.call([IDK, "-s", path, "-i", "../nava/System.nava", "-r", "./"])
 
 def compile_and_run(path: str):
     compile(path)
-    s = "./main > " + path.split('.')[0] + ".temp"
+    parts = path.split('/');
+    s = "./main > " + '/'.join(parts[0:-1]) + '/' + parts[len(parts)-1].split(".")[0] + ".temp"
     subprocess.call(["sh", "-c", s])
-    if open(path.split('.')[0] + ".temp", "r").read() != open(path.split('.')[0] + ".txt", "r").read():
-        print("Failed test: %s" % path)
+    if open('/'.join(parts[0:-1]) + '/' + parts[len(parts)-1].split(".")[0] + ".temp", "r").read() != open('/'.join(parts[0:-1]) + '/' + parts[len(parts)-1].split(".")[0] + ".txt", "r").read():
+        print("\u001b[31mFailed test:\u001b[0m %s" % path)
+        print("Expected:")
+        print(open('/'.join(parts[0:-1]) + '/' + parts[len(parts)-1].split(".")[0] + ".txt", "r").read())
+        print("Got:")
+        print(open('/'.join(parts[0:-1]) + '/' + parts[len(parts)-1].split(".")[0] + ".temp", "r").read())
+        os.remove('/'.join(parts[0:-1]) + '/' + parts[len(parts)-1].split(".")[0] + ".temp")
         exit(1)
     else:
-        print("Passed test: %s" % path)
-    os.remove(path.split('.')[0] + ".temp")
+        print("\u001b[32mPassed test:\u001b[0m %s" % path)
+    os.remove('/'.join(parts[0:-1]) + '/' + parts[len(parts)-1].split(".")[0] + ".temp")
+
+def compile_run_all():
+    nava_files = glob.glob("./**/*.nava", recursive=True)
+    for nava in nava_files:
+        if os.path.isdir(nava) :
+            continue
+        if nava == "./System.nava":
+            continue
+        else:
+            compile_and_run(nava)
 
 def compile_and_record(path: str):
     compile(path)
-    s = "./main > " + path.split('.')[0] + ".txt" 
+    parts = path.split('/');
+    
+    s = "./main > "
+
+    if len(parts) == 1:
+        s += parts[len(parts)-1].split(".")[0] + ".txt"
+    else:
+        s +=  '/'.join(parts[0:-1]) + '/' + parts[len(parts)-1].split(".")[0] + ".txt"
     subprocess.call(["sh", "-c", s])
 
-def compile_run_all():
-    nava_files = glob.glob("./*.nava")
-    for nava in nava_files:
-        if nava == "./Debug.nava":
-            continue
-        else:
-            compile_and_run(nava.split('/')[1])
-
 def compile_record_all():
-    nava_files = glob.glob("./*.nava")
+    nava_files = glob.glob("./**/*.nava", recursive=True)
     for nava in nava_files:
-        if nava == "./Debug.nava":
+        if os.path.isdir(nava) :
+            continue
+        if nava == "./System.nava":
             continue
         else:
-            compile_and_record(nava.split('/')[1])
+            compile_and_record(nava)
 
 if __name__ == "__main__":
     assert len(sys.argv) > 1, "Not enought arguments."
     if(sys.argv[1] == "-a"):
         compile_run_all()
-    elif sys.argv[1] == "-r":
+    elif sys.argv[1] == "-ra":
         compile_record_all()
+    elif sys.argv[1] == "-r":
+        compile_and_record(sys.argv[2])
     else:
         compile_and_run(sys.argv[1])

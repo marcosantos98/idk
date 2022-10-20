@@ -1,6 +1,6 @@
 #pragma once
 
-#include <functional>
+#include <optional>
 #include <tuple>
 
 #include "nava.hpp"
@@ -59,13 +59,13 @@ struct StackVar
     size_t stack_offset;
 };
 
-enum class MethodExprType
+enum class MethodExprType : int
 {
-    VAR,
-    FUNCALL,
-    BINOP,
-    IF,
-    WHILE,
+    VAR = 0,
+    FUNCALL = 1,
+    BINOP = 2,
+    IF = 3,
+    WHILE = 4,
 };
 
 struct MethodExpr;
@@ -114,7 +114,7 @@ struct MethodExpr
 {
     bool is_final = false;
     MethodExprType type;
-    std::tuple<VariableDef, StackVar> var_def;
+    std::optional<std::tuple<VariableDef, StackVar>> var_def;
     FuncallDef func_def;
     BinopDef binop_def;
     IfDef if_def;
@@ -145,5 +145,6 @@ struct Project
 {
     String main_class = "";
     String root_path;
+    bool single_file = false;
     Map<String, ClassDef> project_classes = {};
 };

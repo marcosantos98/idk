@@ -2,7 +2,7 @@ import System;
 
 public class GlobalVar {
 
-    public static final int a = 10.0;
+    public static final int a = 10;
 
     public static void main() {
         System.println("Print global value.", 19);

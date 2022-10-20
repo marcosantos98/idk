@@ -304,6 +304,6 @@ void Tokenizer::log_error(const char *msg, ...)
     (void)vsnprintf(buffer, sizeof(buffer), msg, args);
     va_end(args);
     printf("\u001b[1m\u001b[31m[Tokenizer:%s]%ld:%ld:\u001b[0m ", m_path.c_str(), m_row, m_col);
-    printf(buffer);
+    printf("%s", buffer);
     exit(1);
 }

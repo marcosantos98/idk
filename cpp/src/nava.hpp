@@ -8,7 +8,7 @@
 
 #include "json.hpp"
 
-#define VEC_HAS(vec, val) std::find(vec.begin(), vec.end(), val) != vec.end()
+#define VEC_HAS(vec, val) (std::find(vec.begin(), vec.end(), val) != vec.end())
 
 template <class T>
 using OwnPtr = std::unique_ptr<T>;
@@ -26,8 +26,8 @@ using String = std::string;
 
 using Json = nlohmann::json;
 
-
-enum class ValueType {
+enum class ValueType : int
+{
     STRING,
     NUMBER,
     BOOL,
@@ -38,8 +38,7 @@ namespace NAVA
 {
     static Map<String, int> primitive_byte_sizes = {
         {"int", 4},
-        {"boolean", 4}
-    };
+        {"boolean", 4}};
 
     static Vec<String> base_types = {
         "int",
@@ -90,17 +89,20 @@ namespace NAVA
         size_t end = 0;
     };
 
-    enum class VarContext {
+    enum class VarContext
+    {
         STACK,
         DATA,
     };
 
-    struct StackVarInfo {
+    struct StackVarInfo
+    {
         size_t offset;
         String class_name;
     };
 
-    struct GlobalContext {
+    struct GlobalContext
+    {
         NAVA::VarContext var_ctx;
         String text_section;
         String extern_section;
@@ -125,8 +127,8 @@ namespace NAVA
         return str;
     }
 
-    //fixme 22/10/06: This is not ideal.
-    static Json def_to_json(Definition def)
+    // fixme 22/10/06: This is not ideal.
+    inline static Json def_to_json(Definition def)
     {
         Json json;
 

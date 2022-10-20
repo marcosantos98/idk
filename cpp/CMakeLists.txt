@@ -1,28 +1,22 @@
 cmake_minimum_required(VERSION 3.20)
 
-set(CMAKE_CXX_COMPILER "/usr/bin/g++")
+set(CMAKE_CXX_COMPILER "/usr/bin/clang++")
 set(CMAKE_CXX_FLAGS "-Wall -Wextra -std=c++20 -pedantic")
-project(idk CXX)
+project(nava CXX)
 
 include_directories(./src)
 
-# add_executable(idk
-#     main.cpp
-#     ./src/tokenizer.cpp
-#     ./src/expressions.cpp
-#     ./src/ast.cpp
-#     ./src/json.hpp
-#     ./src/codegen.cpp
-#     )
-add_executable(idk
-    ./new/checker.cpp
-    ./new/str_helper.cpp
-    ./new/x86_64_helper.cpp
-    ./new/x86_64_nasm_linux.cpp
-    ./new/global.cpp    
+add_executable(nava
+    ./main.cpp    
+    ./src/debug.cpp
+    ./src/checker.cpp
+    ./src/str_helper.cpp
+    ./src/x86_64_helper.cpp
+    ./src/x86_64_nasm_linux.cpp
     ./src/tokenizer.cpp
-    ./new/expressions.cpp
-    ./new/ast.cpp
+    ./src/expressions.cpp
+    ./src/ast.cpp
+    ./src/log.cpp
     ./src/json.hpp
-    #./src/codegen.cpp
+    ./src/argparser.hpp
     )
