@@ -1,0 +1,2 @@
+Print global value.
+10

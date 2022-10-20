@@ -1,5 +1,7 @@
 package math;
 
+import System;
+
 public class Div {
 
     public static void main() {

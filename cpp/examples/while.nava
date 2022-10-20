@@ -1,3 +1,5 @@
+import System;
+
 public class While {
 
     public static void main() {
@@ -5,6 +7,11 @@ public class While {
         while(i < 10) {
             System.printDec(i);
             i++;
+        }
+        int j = 10;
+        while(i > 0) {
+            System.printDec(i);
+            i--;
         }
         System.exit(0);
     }

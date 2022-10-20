@@ -1,3 +1,5 @@
+import System;
+
 public class IfTrue {
 
     public static void main() {

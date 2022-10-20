@@ -25,6 +25,8 @@ void Tokenizer::run()
             parse_plus();
             break;
         case '-':
+            parse_minus();
+            break;
         case '%':
         case '*':
         case '=':
@@ -59,6 +61,9 @@ void Tokenizer::run()
             break;
         case '<':
             parse_less_sign();
+            break;
+        case '>':
+            parse_greater_sign();
             break;
         default:
             if (isdigit(m_input[m_cursor]))
@@ -165,6 +170,26 @@ void Tokenizer::parse_plus()
     }
 }
 
+void Tokenizer::parse_minus()
+{
+    if (m_input[m_cursor + 1] == '=')
+    {
+        m_cursor += 2;
+        m_col += 2;
+        m_tokens.emplace_back(make_token("-=", TokenType::OPERATOR));
+    }
+    else if (m_input[m_cursor + 1] == '-')
+    {
+        m_cursor += 2;
+        m_col += 2;
+        m_tokens.emplace_back(make_token("--", TokenType::OPERATOR));
+    }
+    else
+    {
+        m_tokens.emplace_back(with_current_token(TokenType::OPERATOR));
+    }
+}
+
 void Tokenizer::parse_less_sign()
 {
     if (m_input[m_cursor + 1] == '=')
@@ -172,6 +197,20 @@ void Tokenizer::parse_less_sign()
         m_cursor += 2;
         m_col += 2;
         m_tokens.emplace_back(make_token("<=", TokenType::OPERATOR));
+    }
+    else
+    {
+        m_tokens.emplace_back(with_current_token(TokenType::OPERATOR));
+    }
+}
+
+void Tokenizer::parse_greater_sign()
+{
+    if (m_input[m_cursor + 1] == '=')
+    {
+        m_cursor += 2;
+        m_col += 2;
+        m_tokens.emplace_back(make_token(">=", TokenType::OPERATOR));
     }
     else
     {
@@ -265,6 +304,6 @@ void Tokenizer::log_error(const char *msg, ...)
     (void)vsnprintf(buffer, sizeof(buffer), msg, args);
     va_end(args);
     printf("\u001b[1m\u001b[31m[Tokenizer:%s]%ld:%ld:\u001b[0m ", m_path.c_str(), m_row, m_col);
-    printf(buffer);
+    printf("%s", buffer);
     exit(1);
 }
