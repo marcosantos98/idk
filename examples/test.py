@@ -7,6 +7,9 @@ import sys;
 import os;
 
 IDK="../build/nava"
+FAILED=[]
+PASSED=[]
+NAVA_FILES=glob.glob("./**/*.nava", recursive=True)
 
 def compile(path: str):
     subprocess.call([IDK, "-s", path, "-i", "../nava/System.nava", "-r", "./"])
@@ -22,14 +25,15 @@ def compile_and_run(path: str):
         print(open('/'.join(parts[0:-1]) + '/' + parts[len(parts)-1].split(".")[0] + ".txt", "r").read())
         print("Got:")
         print(open('/'.join(parts[0:-1]) + '/' + parts[len(parts)-1].split(".")[0] + ".temp", "r").read())
-        os.remove('/'.join(parts[0:-1]) + '/' + parts[len(parts)-1].split(".")[0] + ".temp")
-        exit(1)
+        FAILED.append(path);
     else:
         print("\u001b[32mPassed test:\u001b[0m %s" % path)
+        PASSED.append(path);
     os.remove('/'.join(parts[0:-1]) + '/' + parts[len(parts)-1].split(".")[0] + ".temp")
 
 def compile_run_all():
     nava_files = glob.glob("./**/*.nava", recursive=True)
+    TEST_CNT = len(nava_files)
     for nava in nava_files:
         if os.path.isdir(nava) :
             continue
@@ -51,8 +55,7 @@ def compile_and_record(path: str):
     subprocess.call(["sh", "-c", s])
 
 def compile_record_all():
-    nava_files = glob.glob("./**/*.nava", recursive=True)
-    for nava in nava_files:
+    for nava in NAVA_FILES:
         if os.path.isdir(nava) :
             continue
         if nava == "./System.nava":
@@ -70,3 +73,9 @@ if __name__ == "__main__":
         compile_and_record(sys.argv[2])
     else:
         compile_and_run(sys.argv[1])
+    print()
+    print("PASSED: %02d/%02d" % (len(PASSED), len(NAVA_FILES)))
+    print("FAILED: %02d/%02d" % (len(FAILED), len(NAVA_FILES)))
+    for fail in FAILED:
+        print("\t%s" % fail)
+    print()
