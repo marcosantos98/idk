@@ -165,3 +165,12 @@ Json AssignExpression::to_json()
     json["value"] = p_value.get()->to_json();
     return json;
 }
+
+Json NewArrayExpression::to_json()
+{
+    Json json;
+    json["type"] = "NewArrayExpression";
+    json["array_type"] = p_array_type;
+    json["array_size"] = p_array_size.get()->to_json();
+    return json;
+}

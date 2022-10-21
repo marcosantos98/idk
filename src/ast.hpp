@@ -38,6 +38,7 @@ private:
     OwnPtr<ValueExpression> parse_value_expression();
     OwnPtr<ValueExpression> parse_variable_expression();
     OwnPtr<ValueExpression> parse_bool_expression();
+    OwnPtr<NewArrayExpression> parse_new_array_expression();
     OwnPtr<AssignExpression> parse_asign_expression();
     OwnPtr<Expression> parse_parentisis_expression();
     OwnPtr<Expression> parse_binary_right_side(int, OwnPtr<Expression>);

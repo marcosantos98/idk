@@ -127,6 +127,18 @@ OwnPtr<ValueExpression> AST::parse_value_expression()
     return std::make_unique<ValueExpression>(val, type);
 }
 
+OwnPtr<NewArrayExpression> AST::parse_new_array_expression()
+{
+    log_error("%s\n", get_token().lex_value.c_str());
+    m_current_token++; // eat new
+    auto array_type = get_token().lex_value;
+    m_current_token++;
+    auto array_size = parse_value_expression();
+    m_current_token++;
+    m_current_token++;
+    return std::make_unique<NewArrayExpression>(array_type, move(array_size));
+}
+
 OwnPtr<ValueExpression> AST::parse_bool_expression()
 {
     String val = get_token().lex_value;

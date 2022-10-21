@@ -151,3 +151,14 @@ class AssignExpression : public Expression
 
     virtual Json to_json() override;
 };
+
+class NewArrayExpression : public Expression {
+    public:
+        String p_array_type;
+        OwnPtr<ValueExpression> p_array_size;
+    
+    NewArrayExpression(String array_type, OwnPtr<ValueExpression> array_size)
+        : p_array_type(array_type), p_array_size(move(array_size)) {}
+
+    virtual Json to_json() override;
+};
