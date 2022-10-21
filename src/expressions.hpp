@@ -139,3 +139,15 @@ public:
 
     virtual Json to_json() override;
 };
+
+class AssignExpression : public Expression
+{
+    public:
+        String p_alias;
+        OwnPtr<Expression> p_value;
+    
+    AssignExpression(String alias, OwnPtr<Expression> value)
+        : p_alias(alias), p_value(move(value)) {}
+
+    virtual Json to_json() override;
+};

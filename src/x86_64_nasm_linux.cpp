@@ -56,8 +56,16 @@ void CodeGenerator::init(ClassDef class_def, MethodDef method_def)
         m_global_var_alias[var_def.arg_name] = var_def;
 
     for (auto expr : method_def.method_expressions)
+    {
         if (expr.var_def.has_value())
             m_stack_var_alias[std::get<1>(expr.var_def.value()).alias] = expr.var_def.value();
+        
+        //fixme 22/10/21: This isn't that good
+        if (expr.type == MethodExprType::WHILE)
+            for (auto while_expr : expr.while_def.body_expr)
+                if (while_expr.var_def.has_value())
+                    m_stack_var_alias[std::get<1>(while_expr.var_def.value()).alias] = while_expr.var_def.value();
+    }
 }
 
 void CodeGenerator::generate()
@@ -221,10 +229,29 @@ void CodeGenerator::gen_method(MethodDef method)
 
 void CodeGenerator::gen_stack_var(MethodExpr method_expr)
 {
-    mov_mX_immX(&m_ctx.text,
-                std::get<0>(method_expr.var_def.value()).class_name,
-                std::get<1>(method_expr.var_def.value()).stack_offset,
-                std::get<0>(method_expr.var_def.value()).val);
+    if (std::get<0>(method_expr.var_def.value()).val.type == ValueType::NUMBER)
+    {
+        mov_mX_immX(&m_ctx.text,
+                    std::get<0>(method_expr.var_def.value()).class_name,
+                    std::get<1>(method_expr.var_def.value()).stack_offset,
+                    std::get<0>(method_expr.var_def.value()).val);
+    }
+    else if (std::get<0>(method_expr.var_def.value()).val.type == ValueType::VAR_REF)
+    {
+        auto val = std::get<0>(method_expr.var_def.value()).val;
+        if (m_global_var_alias.contains(val.raw))
+            generator->log_terr("StackVar with reference to global variable not implemented yet!\n");
+        // mov_mX_data(&m_ctx.text, arg_reg_32[m_ctx.current_arg_index++].c_str(), (m_ctx.current_class_name + "_" + val.raw));
+        else if (m_stack_var_alias.contains(val.raw))
+        {
+            auto primitive = std::get<0>(m_stack_var_alias[val.raw]).class_name;
+            auto offset = std::get<1>(m_stack_var_alias[val.raw]).stack_offset;
+            mov_reg_mX(&m_ctx.text, primitive, offset, "eax");
+            mov_mX_reg(&m_ctx.text, std::get<0>(method_expr.var_def.value()).class_name, std::get<1>(method_expr.var_def.value()).stack_offset, "eax");
+        }
+        else
+            generator->log_terr("Variable not found! %s\n", val.raw.c_str());
+    }
 }
 
 void CodeGenerator::gen_binop(MethodExpr stack)
@@ -275,7 +302,7 @@ void CodeGenerator::gen_binop(MethodExpr stack)
         m_ctx.text += "\tmov eax, edx\n";
     }
 
-    if(stack.var_def.has_value())
+    if (stack.var_def.has_value())
         mov_mX_reg(&m_ctx.text, std::get<0>(stack.var_def.value()).class_name, std::get<1>(stack.var_def.value()).stack_offset, "eax");
 }
 
@@ -381,6 +408,11 @@ void CodeGenerator::gen_while(MethodExpr method_expr)
     jmp_cnt += 2;
 }
 
+void CodeGenerator::gen_assign(MethodExpr method_expr)
+{
+    gen_type(method_expr.assign_def.val[0]);
+}
+
 void CodeGenerator::gen_type(MethodExpr method_expr)
 {
     switch (method_expr.type)
@@ -400,8 +432,11 @@ void CodeGenerator::gen_type(MethodExpr method_expr)
     case MethodExprType::WHILE:
         gen_while(method_expr);
         break;
+    case MethodExprType::ASSIGN:
+        gen_assign(method_expr);
+        break;
     default:
-        generator->log_terr("fixme 22/10/19: 369 Not Implemented\n");
+        generator->log_terr("gen_type: Not Implemented\n");
         break;
     }
 }
@@ -457,6 +492,8 @@ String CodeGenerator::as_val_or_mem(Value val)
             return string_format("%s_%s", m_ctx.current_class_name.c_str(), val.raw.c_str());
         else if (m_stack_var_alias.contains(val.raw))
             return string_format("dword [rbp-%d]", std::get<1>(m_stack_var_alias[val.raw]).stack_offset);
+        else
+            generator->log_terr("as_val_or_mem: Var not found %s\n", val.raw.c_str());
     }
     generator->log_terr("AsValOrMem: Not implemented %d %s\n", static_cast<int>(val.type), val.raw.c_str());
 

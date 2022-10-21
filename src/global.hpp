@@ -66,9 +66,15 @@ enum class MethodExprType : int
     BINOP = 2,
     IF = 3,
     WHILE = 4,
+    ASSIGN = 5,
 };
 
 struct MethodExpr;
+
+struct AssignDef {
+    String alias;
+    Vec<MethodExpr> val;
+};
 
 struct BinopDef
 {
@@ -119,6 +125,7 @@ struct MethodExpr
     BinopDef binop_def;
     IfDef if_def;
     WhileDef while_def;
+    AssignDef assign_def;
 };
 
 struct MethodDef

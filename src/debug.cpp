@@ -106,6 +106,31 @@ void print_project(Project const &project)
                                    std::get<1>(e.var_def.value()).alias.c_str(),
                                    std::get<1>(e.var_def.value()).stack_offset);
                         }
+                        else if (e.type == MethodExprType::VAR)
+                        {
+                            printf("\t\tVarName:%s, VarClass:%s VarValueRaw:%s VarValueType:%d\n",
+                                   std::get<0>(e.var_def.value()).arg_name.c_str(),
+                                   std::get<0>(e.var_def.value()).class_name.c_str(),
+                                   std::get<0>(e.var_def.value()).val.raw.c_str(),
+                                   static_cast<int>(std::get<0>(e.var_def.value()).val.type));
+                            printf("\t\t\tStackVar:%s Offset:%ld\n",
+                                   std::get<1>(e.var_def.value()).alias.c_str(),
+                                   std::get<1>(e.var_def.value()).stack_offset);
+                        }
+                        else if (e.type == MethodExprType::ASSIGN)
+                        {
+                            printf("\t\t\tAssign:%s from ", e.assign_def.alias.c_str());
+                            if(e.assign_def.val[0].type == MethodExprType::BINOP)
+                            {
+                                printf("LeftValueRaw:%s OP:%s RightValueRaw:%s\n",
+                                   e.assign_def.val[0].binop_def.left.raw.c_str(), e.assign_def.val[0].binop_def.op.c_str(),
+                                   e.assign_def.val[0].binop_def.rigth.raw.c_str());
+                            }
+                            else if(e.assign_def.val[0].type == MethodExprType::VAR)
+                            {
+                                printf("ValueRaw:%s VarOffset:%ld\n", std::get<0>(e.assign_def.val[0].var_def.value()).val.raw.c_str(), std::get<1>(e.assign_def.val[0].var_def.value()).stack_offset);
+                            }
+                        }
                     }
                 }
             }

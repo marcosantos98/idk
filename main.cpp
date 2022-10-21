@@ -365,6 +365,105 @@ void parse_input(Project *project, String file_path, String input)
                         auto expr = parse_binop(binop_expr);
                         body.emplace_back(expr);
                     }
+                    else if (auto var_expr = dynamic_cast<const VariableDeclarationExpression *>(exp.get()))
+                    {
+
+                        VariableDef var_def;
+                        var_def.arg_name = var_expr->p_definition.arg_name;
+                        var_def.class_name = var_expr->p_definition.class_name;
+
+                        size_t type_offset = NAVA::primitive_byte_sizes[var_def.class_name];
+                        def.stack_offset += type_offset;
+
+                        StackVar var;
+                        var.alias = var_expr->p_definition.arg_name;
+                        var.stack_offset = def.stack_offset;
+
+                        if (auto value = dynamic_cast<const ValueExpression *>(var_expr->p_value.get()))
+                        {
+
+                            Value val;
+                            val.raw = value->p_value;
+                            val.type = value->p_type;
+                            var_def.val = val;
+
+                            // fixme 22/10/15: Check if is a primitive before retrieving the actual value.
+
+                            MethodExpr method_var_def;
+                            method_var_def.type = MethodExprType::VAR;
+                            method_var_def.is_final = false; // fixme 22/10/14: This should be handled.
+                            method_var_def.var_def = std::make_tuple(var_def, var);
+
+                            body.emplace_back(method_var_def);
+                        }
+                        else if (auto binop = dynamic_cast<const BinaryExpression *>(var_expr->p_value.get()))
+                        {
+                            MethodExpr expr = parse_binop(binop);
+                            expr.var_def = std::make_tuple(var_def, var);
+                            body.emplace_back(expr);
+                        }
+                    }
+                    else if (auto assign_expr = dynamic_cast<const AssignExpression *>(exp.get()))
+                    {
+                        AssignDef assign_def;
+                        assign_def.alias = assign_expr->p_alias;
+
+                        if (auto binop = dynamic_cast<const BinaryExpression *>(assign_expr->p_value.get()))
+                        {
+
+                            MethodExpr expr = parse_binop(binop);
+                            std::optional<std::tuple<VariableDef, StackVar>> var_def;
+
+                            for (auto method_exp : stack_vars)
+                            {
+                                if (method_exp.type == MethodExprType::VAR && std::get<0>(method_exp.var_def.value()).arg_name == assign_def.alias)
+                                {
+                                    var_def = method_exp.var_def;
+                                    break;
+                                }
+                            }
+
+                            expr.var_def = var_def;
+
+                            assign_def.val = {expr};
+                        }
+                        else if (auto value_expr = dynamic_cast<const ValueExpression *>(assign_expr->p_value.get()))
+                        {
+                            Value val;
+                            val.raw = value_expr->p_value;
+                            val.type = value_expr->p_type;
+
+                            MethodExpr method_var_def;
+                            method_var_def.type = MethodExprType::VAR;
+                            
+                            std::optional<std::tuple<VariableDef, StackVar>> var_def;
+
+                            for (auto method_exp : stack_vars)
+                            {
+                                if (method_exp.type == MethodExprType::VAR && std::get<0>(method_exp.var_def.value()).arg_name == assign_def.alias)
+                                {
+                                    var_def = method_exp.var_def;
+                                    break;
+                                }
+                            }
+
+                            std::get<0>(var_def.value()).val = val;
+
+                            method_var_def.var_def = var_def;
+
+                            assign_def.val = {method_var_def};
+                        }
+                        else
+                        {
+                            logger.log_terr("Not implemented yet! %s\n", assign_expr->p_value.get()->to_json()["type"].dump().c_str());
+                        }
+
+                        MethodExpr method_expr;
+                        method_expr.type = MethodExprType::ASSIGN;
+                        method_expr.assign_def = assign_def;
+
+                        body.emplace_back(method_expr);
+                    }
                 }
 
                 while_def.body_expr = body;
@@ -374,6 +473,10 @@ void parse_input(Project *project, String file_path, String input)
                 method_expr.while_def = while_def;
 
                 stack_vars.emplace_back(method_expr);
+            }
+            else if (auto assign_expr = dynamic_cast<const AssignExpression *>(body_expr.get()))
+            {
+                logger.log_terr("ASSGIN IN Method: Not implemented yet!\n");
             }
         }
 

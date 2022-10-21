@@ -156,3 +156,12 @@ Json PackageExpression::to_json()
     json["path"] = p_path;
     return json;
 }
+
+Json AssignExpression::to_json()
+{
+    Json json;
+    json["type"] = "AssignExpression";
+    json["alias"] = p_alias;
+    json["value"] = p_value.get()->to_json();
+    return json;
+}

@@ -134,6 +134,16 @@ OwnPtr<ValueExpression> AST::parse_bool_expression()
     return std::make_unique<ValueExpression>(val, ValueType::BOOL);
 }
 
+OwnPtr<AssignExpression> AST::parse_asign_expression()
+{
+    String val = get_token().lex_value;
+    m_current_token++; //Eat val
+    m_current_token++; //Eat =
+    auto value = parse_expression();
+    m_current_token++; //Eat ;
+    return std::make_unique<AssignExpression>(val, move(value));
+}
+
 OwnPtr<ValueExpression> AST::parse_variable_expression()
 {
     String val = get_token().lex_value;
@@ -335,6 +345,9 @@ OwnPtr<Expression> AST::try_parse_identifier_or_base_type()
     // fixme 22/10/07: Add keywords to remove them from identifiers.
     if (get_token().type == TokenType::IDENTIFIER && get_token().lex_value == "if")
         return parse_if_expression();
+
+    if (get_token().type == TokenType::IDENTIFIER && m_tokens[m_current_token+1].lex_value == "=")
+        return parse_asign_expression();
 
     if (get_token().type == TokenType::IDENTIFIER && get_token().lex_value == "while")
         return parse_while_expression();
