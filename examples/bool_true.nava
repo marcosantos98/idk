@@ -1,0 +1,14 @@
+import System;
+
+public class BoolTrue {
+
+    public static void main() {
+        boolean b = true;
+
+        if(b) {
+            System.println("Hello World!", 12);
+        }
+
+        System.exit(0);
+    }
+}
