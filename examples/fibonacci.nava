@@ -1,0 +1,25 @@
+import System;
+
+public class Fibonacci {
+
+    public static void main() {
+        System.printDec(0);
+        System.printDec(1);
+           
+        int a = 0; //n1
+        int b = 1; //n2
+        int c = 0; //n1 + n2
+
+        int i = 2;
+        while(i < 10)
+        {
+            c = a + b;
+            System.printDec(c);
+            a = b;
+            b = c;
+            i++;
+        }
+
+        System.exit(0);
+    }
+}
