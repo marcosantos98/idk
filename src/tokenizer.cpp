@@ -44,6 +44,12 @@ void Tokenizer::run()
         case '}':
             m_tokens.emplace_back(with_current_token(TokenType::RCP));
             break;
+        case '[':
+            m_tokens.emplace_back(with_current_token(TokenType::LB));
+            break;
+        case ']':
+            m_tokens.emplace_back(with_current_token(TokenType::RB));
+            break;
         case ',':
             m_tokens.emplace_back(with_current_token(TokenType::COMMA));
             break;
@@ -275,6 +281,10 @@ std::string Tokenizer::tokentype_to_token(TokenType type)
         return "TokenType::LP";
     case TokenType::RP:
         return "TokenType::RP";
+    case TokenType::LB:
+        return "TokenType::LB";
+    case TokenType::RB:
+        return "TokenType::RB";
     case TokenType::LCP:
         return "TokenType::LCP";
     case TokenType::RCP:

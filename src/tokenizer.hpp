@@ -14,6 +14,8 @@ enum class TokenType
     RP,
     LCP,
     RCP,
+    LB,
+    RB,
     COMMA,
     SEMI_COLON,
     END_OF_FILE
