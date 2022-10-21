@@ -36,7 +36,7 @@ void mov_reg_mX(String *out, String const &primitive, size_t offset, const char 
 {
     if (primitive == "boolean")
     {
-        string_format(out, "\tmov %s, byte [rbp-%ld]\n", reg, offset);
+        string_format(out, "\tmovzx %s, byte [rbp-%ld]\n", reg, offset);
     }
     else if (primitive == "short")
     {

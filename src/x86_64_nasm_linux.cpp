@@ -59,8 +59,8 @@ void CodeGenerator::init(ClassDef class_def, MethodDef method_def)
     {
         if (expr.var_def.has_value())
             m_stack_var_alias[std::get<1>(expr.var_def.value()).alias] = expr.var_def.value();
-        
-        //fixme 22/10/21: This isn't that good
+
+        // fixme 22/10/21: This isn't that good
         if (expr.type == MethodExprType::WHILE)
             for (auto while_expr : expr.while_def.body_expr)
                 if (while_expr.var_def.has_value())
@@ -252,6 +252,13 @@ void CodeGenerator::gen_stack_var(MethodExpr method_expr)
         else
             generator->log_terr("Variable not found! %s\n", val.raw.c_str());
     }
+    else if (std::get<0>(method_expr.var_def.value()).val.type == ValueType::BOOL)
+    {
+        auto val = std::get<0>(method_expr.var_def.value()).val;
+        mov_mX_immX(&m_ctx.text, "boolean", std::get<1>(method_expr.var_def.value()).stack_offset, val);
+    }
+    else
+        generator->log_terr("ValueType not implemented: %d\n", static_cast<int>(std::get<0>(method_expr.var_def.value()).val.type));
 }
 
 void CodeGenerator::gen_binop(MethodExpr stack)
@@ -362,6 +369,31 @@ void CodeGenerator::gen_if(MethodExpr method_expr)
             m_ctx.text += "\tcmp eax, 0\n";
             string_format(&m_ctx.text, "\tje .JPL_%ld\n", jmp_cnt);
         }
+        else if (method_expr.if_def.cond.val.type == ValueType::BOOL)
+        {
+            string_format(&m_ctx.text, "\tmov eax, %d\n", method_expr.if_def.cond.val.as_bool());
+            m_ctx.text += "\tcmp eax, 1\n";
+            string_format(&m_ctx.text, "\tjne .JPL_%ld\n", jmp_cnt);
+        }
+        else if (method_expr.if_def.cond.val.type == ValueType::VAR_REF)
+        {
+            if (m_global_var_alias.contains(method_expr.if_def.cond.val.raw))
+            {
+                generator->log_terr("%s Not implemented yet\n", __FILE__);
+            }
+            else if (m_stack_var_alias.contains(method_expr.if_def.cond.val.raw))
+            {
+                auto primitive = std::get<0>(m_stack_var_alias[method_expr.if_def.cond.val.raw]).class_name;
+                auto offset = std::get<1>(m_stack_var_alias[method_expr.if_def.cond.val.raw]).stack_offset;
+                mov_reg_mX(&m_ctx.text, primitive, offset, "eax");
+                m_ctx.text += "\tcmp eax, 1\n";
+                string_format(&m_ctx.text, "\tjne .JPL_%ld\n", jmp_cnt);
+            }
+            else
+                generator->log_terr("%s Variable not found: %s\n", __FILE__, method_expr.if_def.cond.val.raw.c_str());
+        }
+        else
+            generator->log_terr("If_Expr: Not implemented %d\n", static_cast<int>(method_expr.if_def.cond.val.type));
     }
 
     for (auto method_expr : method_expr.if_def.body_expr)
