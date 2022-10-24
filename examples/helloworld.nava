@@ -1,0 +1,9 @@
+import System;
+
+public class HelloWorld {
+
+    public static void main() {
+        System.println("Hello World!", 12);
+        System.exit(0);
+    }
+}
