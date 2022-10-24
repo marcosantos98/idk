@@ -36,7 +36,45 @@ public:
 
     void run();
     void print_token(Token);
-    String tokentype_to_token(TokenType);
+    static String tokentype_to_token(TokenType type)
+    {
+        switch (type)
+        {
+        case TokenType::NUMBER:
+            return "TokenType::NUMBER";
+        case TokenType::MODIFIER:
+            return "TokenType::MODIFIER";
+        case TokenType::BASE_TYPE:
+            return "TokenType::BASE_TYPE";
+        case TokenType::OPERATOR:
+            return "TokenType::OPERATOR";
+        case TokenType::STRING:
+            return "TokenType::STRING";
+        case TokenType::IDENTIFIER:
+            return "TokenType::IDENTIFIER";
+        case TokenType::LP:
+            return "TokenType::LP";
+        case TokenType::RP:
+            return "TokenType::RP";
+        case TokenType::LB:
+            return "TokenType::LB";
+        case TokenType::RB:
+            return "TokenType::RB";
+        case TokenType::LCP:
+            return "TokenType::LCP";
+        case TokenType::RCP:
+            return "TokenType::RCP";
+        case TokenType::COMMA:
+            return "TokenType::COMMA";
+        case TokenType::SEMI_COLON:
+            return "TokenType::SEMI_COLON";
+        case TokenType::END_OF_FILE:
+            return "TokenType::END_OF_FILE";
+        default:
+            printf("Unknown token.\n");
+            exit(1);
+        }
+    }
 
     Vec<Token> get_tokens() const
     {
@@ -64,5 +102,5 @@ private:
     Token make_token(String, TokenType);
     Token with_current_token(TokenType);
     bool is_eof();
-    void log_error(const char*, ...);
+    void log_error(const char *, ...);
 };

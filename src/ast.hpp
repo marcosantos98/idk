@@ -58,6 +58,9 @@ private:
         return m_current_token >= m_tokens.size() ? m_tokens[m_tokens.size() - 1] : m_tokens[m_current_token];
     }
 
+    void advanced_with_expected(TokenType, const char* fun = "");
+    void advanced_if_identifier(String const&, const char* fun = "");
+
     int get_token_precedence();
     void do_if_token_lex_pred_and_advance(String, std::function<void()>);
     void log_error(const char *, ...);

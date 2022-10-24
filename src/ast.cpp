@@ -19,7 +19,7 @@ void AST::parse()
 
     NAVA::Definition class_def = parse_class_definition(true);
 
-    m_current_token++; // advance {
+    advanced_with_expected(TokenType::LCP);
 
     OwnPtrVec<Expression> class_expressions = {};
     OwnPtrVec<Expression> method_expressions = {};
@@ -34,7 +34,7 @@ void AST::parse()
             method_expressions.emplace_back(std::move(expression));
     }
 
-    m_current_token++;
+    advanced_with_expected(TokenType::RCP);
 
     m_root_class = std::make_unique<ClassExpression>(class_def, std::move(class_expressions), std::move(method_expressions), std::move(package));
 
@@ -75,7 +75,7 @@ OwnPtr<Expression> AST::parse_expression()
 
 OwnPtr<ImportExpression> AST::parse_import_expression()
 {
-    m_current_token++; // Eat import
+    advanced_if_identifier("import"); // Eat import
 
     String path = "";
 
@@ -85,7 +85,7 @@ OwnPtr<ImportExpression> AST::parse_import_expression()
         m_current_token++;
     }
 
-    m_current_token++; // Eat ;
+    advanced_with_expected(TokenType::SEMI_COLON); // Eat ;
 
     path = path.substr(0, path.length() - 1);
 
@@ -94,7 +94,7 @@ OwnPtr<ImportExpression> AST::parse_import_expression()
 
 OwnPtr<PackageExpression> AST::parse_package_expression()
 {
-    m_current_token++; // Eat package
+    advanced_if_identifier("package"); // Eat package
 
     String path = "";
 
@@ -104,7 +104,7 @@ OwnPtr<PackageExpression> AST::parse_package_expression()
         m_current_token++;
     }
 
-    m_current_token++; // Eat ;
+    advanced_with_expected(TokenType::SEMI_COLON); // Eat ;
 
     path = path.substr(0, path.length() - 1);
 
@@ -120,22 +120,21 @@ OwnPtr<ValueExpression> AST::parse_value_expression()
         type = ValueType::STRING;
     else if (get_token().type == TokenType::IDENTIFIER)
         type = ValueType::VAR_REF;
-    else 
+    else
         log_error("Invalid token for a value expression.\n");
     String val = get_token().lex_value;
-    m_current_token++;
+    m_current_token++;    
     return std::make_unique<ValueExpression>(val, type);
 }
 
 OwnPtr<NewArrayExpression> AST::parse_new_array_expression()
 {
-    log_error("%s\n", get_token().lex_value.c_str());
-    m_current_token++; // eat new
+    advanced_with_expected(TokenType::IDENTIFIER);
     auto array_type = get_token().lex_value;
-    m_current_token++;
+    advanced_with_expected(TokenType::BASE_TYPE);
+    advanced_with_expected(TokenType::LB);
     auto array_size = parse_value_expression();
-    m_current_token++;
-    m_current_token++;
+    advanced_with_expected(TokenType::RB);
     return std::make_unique<NewArrayExpression>(array_type, move(array_size));
 }
 
@@ -149,10 +148,10 @@ OwnPtr<ValueExpression> AST::parse_bool_expression()
 OwnPtr<AssignExpression> AST::parse_asign_expression()
 {
     String val = get_token().lex_value;
-    m_current_token++; //Eat val
-    m_current_token++; //Eat =
+    advanced_with_expected(TokenType::IDENTIFIER);
+    advanced_with_expected(TokenType::OPERATOR); // fixme 22/10/23: check operator
     auto value = parse_expression();
-    m_current_token++; //Eat ;
+    advanced_with_expected(TokenType::SEMI_COLON);
     return std::make_unique<AssignExpression>(val, move(value));
 }
 
@@ -165,9 +164,9 @@ OwnPtr<ValueExpression> AST::parse_variable_expression()
 
 OwnPtr<Expression> AST::parse_parentisis_expression()
 {
-    m_current_token++;
+    advanced_with_expected(TokenType::LP);
     auto expr = parse_expression();
-    m_current_token++;
+    advanced_with_expected(TokenType::RP);
     return expr;
 }
 
@@ -178,13 +177,13 @@ OwnPtr<Expression> AST::parse_binary_right_side(int precedence, OwnPtr<Expressio
         if (get_token().type == TokenType::END_OF_FILE)
             return lhs;
 
-        String op = get_token().lex_value;
+        auto op = get_token().lex_value;
 
         int current_precedence = get_token_precedence();
         if (current_precedence < precedence)
             return lhs;
 
-        m_current_token++;
+        advanced_with_expected(TokenType::OPERATOR); // fixme 22/10/23: check Operator
 
         auto rhs = parse_primary();
         if (!rhs)
@@ -204,36 +203,30 @@ OwnPtr<Expression> AST::parse_binary_right_side(int precedence, OwnPtr<Expressio
 
 OwnPtr<VariableDeclarationExpression> AST::parse_variable_declaration_expression(NAVA::Definition def)
 {
-    m_current_token++; // Advance =
-
+    advanced_with_expected(TokenType::OPERATOR); // Check operator
     OwnPtr<Expression> value = parse_expression();
-
-    // fixme 22/10/05: This is not a good option. Maybe remove semicolon?
-    m_current_token++; // Advance ;
-
+    advanced_with_expected(TokenType::SEMI_COLON, __FUNCTION__);
     return std::make_unique<VariableDeclarationExpression>(def, std::move(value));
 }
 
 OwnPtr<IfExpression> AST::parse_if_expression()
 {
-    m_current_token++; // Eat if
-    m_current_token++; // Eat (
-
+    advanced_if_identifier("if");
+    advanced_with_expected(TokenType::LP);
     auto parse = parse_expression();
-
-    m_current_token++; // Eat )
+    advanced_with_expected(TokenType::RP);
 
     OwnPtrVec<Expression> body = {};
     if (get_token().type == TokenType::LCP)
     {
-        m_current_token++; // Eat {
+        advanced_with_expected(TokenType::LCP);
         while (get_token().type != TokenType::RCP)
         {
             auto expression = parse_expression();
             body.emplace_back(std::move(expression));
         }
 
-        m_current_token++; // Eat }
+        advanced_with_expected(TokenType::RCP);
     }
     else
     {
@@ -246,24 +239,24 @@ OwnPtr<IfExpression> AST::parse_if_expression()
 
 OwnPtr<WhileExpression> AST::parse_while_expression()
 {
-    m_current_token++; // Eat if
-    m_current_token++; // Eat (
+    advanced_if_identifier("while");
+    advanced_with_expected(TokenType::LP);
 
     auto parse = parse_expression();
 
-    m_current_token++; // Eat )
+    advanced_with_expected(TokenType::RP);
 
     OwnPtrVec<Expression> body = {};
     if (get_token().type == TokenType::LCP)
     {
-        m_current_token++; // Eat {
+        advanced_with_expected(TokenType::LCP);
         while (get_token().type != TokenType::RCP)
         {
             auto expression = parse_expression();
             body.emplace_back(std::move(expression));
         }
 
-        m_current_token++; // Eat }
+        advanced_with_expected(TokenType::RCP);
     }
     else
     {
@@ -277,7 +270,7 @@ OwnPtr<WhileExpression> AST::parse_while_expression()
 OwnPtr<MethodExpression> AST::parse_method_expression(NAVA::Definition def)
 {
 
-    m_current_token++; // Eat (
+    advanced_with_expected(TokenType::LP);
 
     Vec<NAVA::Definition> args = {};
 
@@ -324,6 +317,7 @@ OwnPtr<MethodExpression> AST::parse_method_expression(NAVA::Definition def)
 
 OwnPtr<CallExpression> AST::parse_call_expression()
 {
+
     String name = get_token().lex_value;
     m_current_token++;
     m_current_token++; // Eat (
@@ -353,12 +347,14 @@ OwnPtr<CallExpression> AST::parse_call_expression()
 
 OwnPtr<Expression> AST::try_parse_identifier_or_base_type()
 {
-
     // fixme 22/10/07: Add keywords to remove them from identifiers.
     if (get_token().type == TokenType::IDENTIFIER && get_token().lex_value == "if")
         return parse_if_expression();
 
-    if (get_token().type == TokenType::IDENTIFIER && m_tokens[m_current_token+1].lex_value == "=")
+    if (get_token().type == TokenType::IDENTIFIER && get_token().lex_value == "new")
+        return parse_new_array_expression();
+
+    if (get_token().type == TokenType::IDENTIFIER && m_tokens[m_current_token + 1].lex_value == "=")
         return parse_asign_expression();
 
     if (get_token().type == TokenType::IDENTIFIER && get_token().lex_value == "while")
@@ -537,12 +533,42 @@ NAVA::Definition AST::parse_temp_definition()
 
     def.class_name = m_tokens[tmp].lex_value;
     tmp++;
+
+    if (m_tokens[tmp].type == TokenType::LB && m_tokens[tmp + 1].type == TokenType::RB)
+    {
+        def.class_name += "[]";
+        tmp += 2;
+    }
+
     def.arg_name = m_tokens[tmp].lex_value;
     tmp++;
 
     def.end = tmp;
 
     return def;
+}
+
+void AST::advanced_with_expected(TokenType type, const char* fun)
+{
+    if (get_token().type == type)
+        m_current_token++;
+    else
+        log_error("Expected %s but found %s with lexed [%s] %s\n",
+                  Tokenizer::tokentype_to_token(type).c_str(),
+                  Tokenizer::tokentype_to_token(get_token().type).c_str(),
+                  get_token().lex_value.c_str(),
+                  fun);
+}
+
+void AST::advanced_if_identifier(String const &identifider, const char* fun)
+{
+    if (get_token().type == TokenType::IDENTIFIER && get_token().lex_value == identifider)
+        m_current_token++;
+    else
+        log_error("Expected IDENTIFIER with %s but found %s with lexed [%s] %s\n",
+                  identifider.c_str(),
+                  Tokenizer::tokentype_to_token(get_token().type).c_str(),
+                  fun);
 }
 
 int AST::get_token_precedence()
