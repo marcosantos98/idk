@@ -202,6 +202,41 @@ void parse_input(Project *project, String file_path, String input)
                     expr.var_def = std::make_tuple(var_def, var);
                     stack_vars.emplace_back(expr);
                 }
+                else if (auto new_arr = dynamic_cast<const NewArrayExpression *>(var_expr->p_value.get()))
+                {
+                    ArrayDef arr_def;
+
+                    arr_def.arr_type = new_arr->p_array_type;
+
+                    auto value = static_cast<const ValueExpression *>(new_arr->p_array_size.get());
+
+                    Value val;
+                    val.raw = value->p_value;
+                    val.type = value->p_type;
+
+                    arr_def.arr_size = val;
+
+                    var_def.val = val;
+
+                    auto type = arr_def.arr_type.substr(0, arr_def.arr_type.find_first_of('['));
+
+                    if (val.type != ValueType::NUMBER && val.type != ValueType::VAR_REF)
+                        logger.log_terr("Array size requires VARIABLE OF NUMBER or NUMBER! Got %d\n", static_cast<int>(val.type));
+
+                    auto stack_mem = val.as_int() * NAVA::primitive_byte_sizes[type];
+                    def.stack_offset += stack_mem;
+
+                    var.stack_offset = stack_mem;
+                    var_def.class_name = type;
+
+                    MethodExpr method_expr;
+                    method_expr.type = MethodExprType::ARRAY;
+                    method_expr.array_def = arr_def;
+                    method_expr.var_def = std::make_tuple(var_def, var);
+                    stack_vars.emplace_back(method_expr);
+                }
+                else
+                    logger.log_terr("Expression not implemented! %s\n", var_expr->p_value.get()->to_json()["type"].dump().c_str());
             }
             else if (auto call_expr = dynamic_cast<const CallExpression *>(body_expr.get()))
             {
@@ -435,7 +470,7 @@ void parse_input(Project *project, String file_path, String input)
 
                             MethodExpr method_var_def;
                             method_var_def.type = MethodExprType::VAR;
-                            
+
                             std::optional<std::tuple<VariableDef, StackVar>> var_def;
 
                             for (auto method_exp : stack_vars)

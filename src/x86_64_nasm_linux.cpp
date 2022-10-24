@@ -445,6 +445,22 @@ void CodeGenerator::gen_assign(MethodExpr method_expr)
     gen_type(method_expr.assign_def.val[0]);
 }
 
+void CodeGenerator::gen_array(MethodExpr method_expr)
+{
+    if(method_expr.array_def.arr_size.type != ValueType::NUMBER && method_expr.array_def.arr_size.type != ValueType::VAR_REF)
+        generator->log_terr("Array size requires VARIABLE OF NUMBER or NUMBER! Got %d\n", static_cast<int>(method_expr.array_def.arr_size.type));
+
+    auto stack_mem = method_expr.array_def.arr_size.as_int() * NAVA::primitive_byte_sizes[std::get<0>(method_expr.var_def.value()).class_name];
+
+    generator->log_tdbg("stack_mem %ld\n", stack_mem);
+
+    Value val;
+    val.raw = "0";
+    val.type = ValueType::NUMBER;
+
+    mov_mX_immX(&m_ctx.text, std::get<0>(method_expr.var_def.value()).class_name, stack_mem, val);
+}
+
 void CodeGenerator::gen_type(MethodExpr method_expr)
 {
     switch (method_expr.type)
@@ -466,6 +482,9 @@ void CodeGenerator::gen_type(MethodExpr method_expr)
         break;
     case MethodExprType::ASSIGN:
         gen_assign(method_expr);
+        break;
+    case MethodExprType::ARRAY:
+        gen_array(method_expr);
         break;
     default:
         generator->log_terr("gen_type: Not Implemented\n");

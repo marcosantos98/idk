@@ -132,6 +132,16 @@ void print_project(Project const &project)
                             }
                         }
                     }
+                } else if(var.type == MethodExprType::ARRAY)
+                {
+                    printf("\t\tVarName:%s, VarClass:%s VarValueRaw:%s VarValueType:%d\n",
+                           std::get<0>(var.var_def.value()).arg_name.c_str(),
+                           std::get<0>(var.var_def.value()).class_name.c_str(),
+                           std::get<0>(var.var_def.value()).val.raw.c_str(),
+                           static_cast<int>(std::get<0>(var.var_def.value()).val.type));
+                    printf("\t\t\tStackVar:%s Offset:%ld\n",
+                           std::get<1>(var.var_def.value()).alias.c_str(),
+                           std::get<1>(var.var_def.value()).stack_offset);
                 }
             }
         }

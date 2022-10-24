@@ -67,9 +67,15 @@ enum class MethodExprType : int
     IF = 3,
     WHILE = 4,
     ASSIGN = 5,
+    ARRAY = 6,
 };
 
 struct MethodExpr;
+
+struct ArrayDef {
+    String arr_type;
+    Value arr_size;
+};
 
 struct AssignDef {
     String alias;
@@ -126,6 +132,7 @@ struct MethodExpr
     IfDef if_def;
     WhileDef while_def;
     AssignDef assign_def;
+    ArrayDef array_def;
 };
 
 struct MethodDef
