@@ -4,7 +4,10 @@ public class Array {
 
     public static void main() {
         int[] ages = new int[10];
-        ages[1] = 10;
+        ages[1] = 6;
+        ages[4] = 9;
+        System.printDec(ages[1]);
+        System.printDec(ages[4]);
         System.exit(0);
     }
 }

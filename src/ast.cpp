@@ -124,6 +124,18 @@ OwnPtr<ValueExpression> AST::parse_value_expression()
         log_error("Invalid token for a value expression.\n");
     String val = get_token().lex_value;
     m_current_token++;
+
+    if(get_token().lex_value == "[")
+    {
+        val += get_token().lex_value;
+        advanced_with_expected(TokenType::LB);
+        val += get_token().lex_value;
+        m_current_token++; //Value
+        val += get_token().lex_value;
+        advanced_with_expected(TokenType::RB);
+        type = ValueType::ARRAY_VAR_REF;
+    }
+
     return std::make_unique<ValueExpression>(val, type);
 }
 
@@ -162,7 +174,7 @@ OwnPtr<AssignArrayExpression> AST::parse_assign_array_expression()
     advanced_with_expected(TokenType::LB);
     auto index = parse_value_expression();
     advanced_with_expected(TokenType::RB);
-    advanced_with_expected(TokenType::OPERATOR); //fixme 22/10/24: check operator =
+    advanced_with_expected(TokenType::OPERATOR); // fixme 22/10/24: check operator =
     auto value = parse_expression();
     advanced_with_expected(TokenType::SEMI_COLON);
     return std::make_unique<AssignArrayExpression>(identifier, move(index), move(value));
@@ -332,15 +344,15 @@ OwnPtr<CallExpression> AST::parse_call_expression()
 {
 
     String name = get_token().lex_value;
-    m_current_token++;
-    m_current_token++; // Eat (
+    advanced_with_expected(TokenType::IDENTIFIER);
+    advanced_with_expected(TokenType::LP);
 
     OwnPtrVec<Expression> args = {};
 
     while (get_token().type != TokenType::RP)
     {
         auto val = parse_expression();
-        args.emplace_back(std::move(val));
+        args.emplace_back(move(val));
 
         if (get_token().type != TokenType::COMMA && get_token().type != TokenType::RP)
         {
@@ -352,10 +364,10 @@ OwnPtr<CallExpression> AST::parse_call_expression()
         }
     }
 
-    m_current_token++; // Eat )
-    m_current_token++; // Eat ;
+    advanced_with_expected(TokenType::RP);
+    advanced_with_expected(TokenType::SEMI_COLON);
 
-    return std::make_unique<CallExpression>(name, std::move(args));
+    return std::make_unique<CallExpression>(name, move(args));
 }
 
 OwnPtr<Expression> AST::try_parse_identifier_or_base_type()
@@ -371,7 +383,11 @@ OwnPtr<Expression> AST::try_parse_identifier_or_base_type()
         return parse_asign_expression();
 
     if (get_token().type == TokenType::IDENTIFIER && m_tokens[m_current_token + 1].lex_value == "[")
-        return parse_assign_array_expression();
+    {
+        if (m_tokens[m_current_token + 4].type == TokenType::OPERATOR)
+            return parse_assign_array_expression();
+        else return parse_value_expression();
+    }
 
     if (get_token().type == TokenType::IDENTIFIER && get_token().lex_value == "while")
         return parse_while_expression();

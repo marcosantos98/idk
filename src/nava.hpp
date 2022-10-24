@@ -31,7 +31,8 @@ enum class ValueType : int
     STRING,
     NUMBER,
     BOOL,
-    VAR_REF
+    VAR_REF,
+    ARRAY_VAR_REF
 };
 
 namespace NAVA

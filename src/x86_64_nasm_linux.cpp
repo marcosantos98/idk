@@ -61,10 +61,12 @@ void CodeGenerator::init(ClassDef class_def, MethodDef method_def)
             m_stack_var_alias[std::get<1>(expr.var_def.value()).alias] = expr.var_def.value();
 
         // fixme 22/10/21: This isn't that good
-        if (expr.type == MethodExprType::WHILE)
+        else if (expr.type == MethodExprType::WHILE)
+        {
             for (auto while_expr : expr.while_def.body_expr)
                 if (while_expr.var_def.has_value())
                     m_stack_var_alias[std::get<1>(while_expr.var_def.value()).alias] = while_expr.var_def.value();
+        }
     }
 }
 
@@ -493,16 +495,35 @@ void CodeGenerator::gen_type(MethodExpr method_expr)
 
 void CodeGenerator::gen_var_ref(Value val)
 {
-    if (m_global_var_alias.contains(val.raw))
-        mov_reg_data(&m_ctx.text, arg_reg_32[m_ctx.current_arg_index++].c_str(), (m_ctx.current_class_name + "_" + val.raw));
-    else if (m_stack_var_alias.contains(val.raw))
+    if (val.type == ValueType::VAR_REF)
     {
-        auto primitive = std::get<0>(m_stack_var_alias[val.raw]).class_name;
-        auto offset = std::get<1>(m_stack_var_alias[val.raw]).stack_offset;
-        mov_reg_mX(&m_ctx.text, primitive, offset, arg_reg_32[m_ctx.current_arg_index++].c_str());
+        if (m_global_var_alias.contains(val.raw))
+            mov_reg_data(&m_ctx.text, arg_reg_32[m_ctx.current_arg_index++].c_str(), (m_ctx.current_class_name + "_" + val.raw));
+        else if (m_stack_var_alias.contains(val.raw))
+        {
+            auto primitive = std::get<0>(m_stack_var_alias[val.raw]).class_name;
+            auto offset = std::get<1>(m_stack_var_alias[val.raw]).stack_offset;
+            mov_reg_mX(&m_ctx.text, primitive, offset, arg_reg_32[m_ctx.current_arg_index++].c_str());
+        }
+        else
+            generator->log_terr("Variable not found! %s\n", val.raw.c_str());
     }
     else
-        generator->log_terr("Variable not found! %s\n", val.raw.c_str());
+    {
+        auto name = val.raw.substr(0, val.raw.find_first_of("["));
+        auto el = val.raw.substr(val.raw.find_first_of("[") + 1, 1);
+
+        if (m_global_var_alias.contains(name))
+            mov_reg_data(&m_ctx.text, arg_reg_32[m_ctx.current_arg_index++].c_str(), (m_ctx.current_class_name + "_" + name));
+        else if (m_stack_var_alias.contains(name))
+        {
+            auto primitive = std::get<0>(m_stack_var_alias[name]).class_name;
+            auto offset = std::get<1>(m_stack_var_alias[name]).stack_offset - (stoi(el) * NAVA::primitive_byte_sizes[primitive]);
+            mov_reg_mX(&m_ctx.text, primitive, offset, arg_reg_32[m_ctx.current_arg_index++].c_str());
+        }
+        else
+            generator->log_terr("Variable not found! %s\n", name.c_str());
+    }
 }
 
 void CodeGenerator::gen_value_type(Value val)
@@ -517,6 +538,7 @@ void CodeGenerator::gen_value_type(Value val)
         string_format(&m_ctx.data, "\ttmp_str_%ld db \"%s\", 10\n", str_cnt, val.as_str().c_str());
         string_format(&m_ctx.text, "\tmov %s, tmp_str_%ld\n", arg_reg_32[m_ctx.current_arg_index++].c_str(), str_cnt++);
         break;
+    case ValueType::ARRAY_VAR_REF:
     case ValueType::VAR_REF:
         gen_var_ref(val);
         break;

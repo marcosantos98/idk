@@ -569,7 +569,7 @@ void parse_input(Project *project, String file_path, String input)
                 MethodExpr method_expr;
                 method_expr.type = MethodExprType::ASSIGN_ARRAY;
                 method_expr.assign_array_def = def;
-
+                
                 stack_vars.emplace_back(method_expr);
             }
             else
@@ -694,8 +694,8 @@ int main(int argc, char **argv)
 
     printf("\n");
     logger.log_tdbg("Execution time:\n");
-    logger.log_info("Parser: %ldms\n", parse_duration);
-    logger.log_info("Checker: %ldms\n", checker_duration);
-    logger.log_info("Generator: %ldms\n", gen_duration);
+    logger.log_info("Parser:                     %ldms\n", parse_duration);
+    logger.log_info("Checker:                    %ldms\n", checker_duration);
+    logger.log_info("Generator [GENASM+NASM+LD]: %ldms\n", gen_duration);
     printf("\n");
 }

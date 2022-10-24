@@ -54,6 +54,7 @@ private:
         String ext = "";
         String text = "section .text\n";
         String data = "section .data\n";
+        String bss = "section .bss\n";
         String current_class_name = "";
         ClassDef current_class;
         size_t current_arg_index = 0;
@@ -84,6 +85,7 @@ private:
         ctx->ext = "";
         ctx->text = "section .text\n";
         ctx->data = "section .data\n";
+        ctx->bss = "section .bss\n";
         ctx->externs = {};
     }
 };
