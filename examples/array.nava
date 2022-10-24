@@ -4,6 +4,7 @@ public class Array {
 
     public static void main() {
         int[] ages = new int[10];
+        ages[1] = 10;
         System.exit(0);
     }
 }

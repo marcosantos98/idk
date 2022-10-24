@@ -123,7 +123,7 @@ OwnPtr<ValueExpression> AST::parse_value_expression()
     else
         log_error("Invalid token for a value expression.\n");
     String val = get_token().lex_value;
-    m_current_token++;    
+    m_current_token++;
     return std::make_unique<ValueExpression>(val, type);
 }
 
@@ -153,6 +153,19 @@ OwnPtr<AssignExpression> AST::parse_asign_expression()
     auto value = parse_expression();
     advanced_with_expected(TokenType::SEMI_COLON);
     return std::make_unique<AssignExpression>(val, move(value));
+}
+
+OwnPtr<AssignArrayExpression> AST::parse_assign_array_expression()
+{
+    String identifier = get_token().lex_value;
+    advanced_with_expected(TokenType::IDENTIFIER);
+    advanced_with_expected(TokenType::LB);
+    auto index = parse_value_expression();
+    advanced_with_expected(TokenType::RB);
+    advanced_with_expected(TokenType::OPERATOR); //fixme 22/10/24: check operator =
+    auto value = parse_expression();
+    advanced_with_expected(TokenType::SEMI_COLON);
+    return std::make_unique<AssignArrayExpression>(identifier, move(index), move(value));
 }
 
 OwnPtr<ValueExpression> AST::parse_variable_expression()
@@ -357,6 +370,9 @@ OwnPtr<Expression> AST::try_parse_identifier_or_base_type()
     if (get_token().type == TokenType::IDENTIFIER && m_tokens[m_current_token + 1].lex_value == "=")
         return parse_asign_expression();
 
+    if (get_token().type == TokenType::IDENTIFIER && m_tokens[m_current_token + 1].lex_value == "[")
+        return parse_assign_array_expression();
+
     if (get_token().type == TokenType::IDENTIFIER && get_token().lex_value == "while")
         return parse_while_expression();
 
@@ -548,7 +564,7 @@ NAVA::Definition AST::parse_temp_definition()
     return def;
 }
 
-void AST::advanced_with_expected(TokenType type, const char* fun)
+void AST::advanced_with_expected(TokenType type, const char *fun)
 {
     if (get_token().type == type)
         m_current_token++;
@@ -560,7 +576,7 @@ void AST::advanced_with_expected(TokenType type, const char* fun)
                   fun);
 }
 
-void AST::advanced_if_identifier(String const &identifider, const char* fun)
+void AST::advanced_if_identifier(String const &identifider, const char *fun)
 {
     if (get_token().type == TokenType::IDENTIFIER && get_token().lex_value == identifider)
         m_current_token++;

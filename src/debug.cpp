@@ -120,19 +120,20 @@ void print_project(Project const &project)
                         else if (e.type == MethodExprType::ASSIGN)
                         {
                             printf("\t\t\tAssign:%s from ", e.assign_def.alias.c_str());
-                            if(e.assign_def.val[0].type == MethodExprType::BINOP)
+                            if (e.assign_def.val[0].type == MethodExprType::BINOP)
                             {
                                 printf("LeftValueRaw:%s OP:%s RightValueRaw:%s\n",
-                                   e.assign_def.val[0].binop_def.left.raw.c_str(), e.assign_def.val[0].binop_def.op.c_str(),
-                                   e.assign_def.val[0].binop_def.rigth.raw.c_str());
+                                       e.assign_def.val[0].binop_def.left.raw.c_str(), e.assign_def.val[0].binop_def.op.c_str(),
+                                       e.assign_def.val[0].binop_def.rigth.raw.c_str());
                             }
-                            else if(e.assign_def.val[0].type == MethodExprType::VAR)
+                            else if (e.assign_def.val[0].type == MethodExprType::VAR)
                             {
                                 printf("ValueRaw:%s VarOffset:%ld\n", std::get<0>(e.assign_def.val[0].var_def.value()).val.raw.c_str(), std::get<1>(e.assign_def.val[0].var_def.value()).stack_offset);
                             }
                         }
                     }
-                } else if(var.type == MethodExprType::ARRAY)
+                }
+                else if (var.type == MethodExprType::ARRAY)
                 {
                     printf("\t\tVarName:%s, VarClass:%s VarValueRaw:%s VarValueType:%d\n",
                            std::get<0>(var.var_def.value()).arg_name.c_str(),
@@ -142,6 +143,20 @@ void print_project(Project const &project)
                     printf("\t\t\tStackVar:%s Offset:%ld\n",
                            std::get<1>(var.var_def.value()).alias.c_str(),
                            std::get<1>(var.var_def.value()).stack_offset);
+                }
+                else if (var.type == MethodExprType::ASSIGN_ARRAY)
+                {
+                    printf("\t\t\tAssign:%s with index %s to ", var.assign_array_def.alias.c_str(), var.assign_array_def.element_index.raw.c_str());
+                    if (var.assign_array_def.val[0].type == MethodExprType::BINOP)
+                    {
+                        printf("LeftValueRaw:%s OP:%s RightValueRaw:%s\n",
+                               var.assign_array_def.val[0].binop_def.left.raw.c_str(), var.assign_array_def.val[0].binop_def.op.c_str(),
+                               var.assign_array_def.val[0].binop_def.rigth.raw.c_str());
+                    }
+                    else if (var.assign_array_def.val[0].type == MethodExprType::VAR)
+                    {
+                        printf("ValueRaw:%s VarOffset:%ld\n", std::get<0>(var.assign_array_def.val[0].var_def.value()).val.raw.c_str(), std::get<1>(var.assign_array_def.val[0].var_def.value()).stack_offset);
+                    }
                 }
             }
         }

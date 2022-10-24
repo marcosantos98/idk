@@ -152,6 +152,19 @@ class AssignExpression : public Expression
     virtual Json to_json() override;
 };
 
+class AssignArrayExpression : public Expression
+{
+    public:
+        String p_alias;
+        OwnPtr<ValueExpression> p_ele_index;
+        OwnPtr<Expression> p_value;
+    
+    AssignArrayExpression(String alias,  OwnPtr<ValueExpression> ele_index, OwnPtr<Expression> value)
+        : p_alias(alias), p_ele_index(move(ele_index)), p_value(move(value)) {}
+
+    virtual Json to_json() override;
+};
+
 class NewArrayExpression : public Expression {
     public:
         String p_array_type;

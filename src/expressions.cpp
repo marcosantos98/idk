@@ -166,6 +166,16 @@ Json AssignExpression::to_json()
     return json;
 }
 
+Json AssignArrayExpression::to_json()
+{
+    Json json;
+    json["type"] = "AssignArrayExpression";
+    json["alias"] = p_alias;
+    json["element_index"] = p_ele_index.get()->to_json();
+    json["value"] = p_value.get()->to_json();
+    return json;
+}
+
 Json NewArrayExpression::to_json()
 {
     Json json;

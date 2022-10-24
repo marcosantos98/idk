@@ -71,6 +71,7 @@ private:
     void gen_if(MethodExpr);
     void gen_while(MethodExpr);
     void gen_assign(MethodExpr);
+    void gen_array(MethodExpr);
     void gen_type(MethodExpr);
     void gen_var_ref(Value);
     void gen_value_type(Value);

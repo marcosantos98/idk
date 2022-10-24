@@ -68,6 +68,7 @@ enum class MethodExprType : int
     WHILE = 4,
     ASSIGN = 5,
     ARRAY = 6,
+    ASSIGN_ARRAY = 7,
 };
 
 struct MethodExpr;
@@ -75,6 +76,12 @@ struct MethodExpr;
 struct ArrayDef {
     String arr_type;
     Value arr_size;
+};
+
+struct AssignArrayDef {
+    String alias;
+    Value element_index;
+    Vec<MethodExpr> val;
 };
 
 struct AssignDef {
@@ -133,6 +140,7 @@ struct MethodExpr
     WhileDef while_def;
     AssignDef assign_def;
     ArrayDef array_def;
+    AssignArrayDef assign_array_def;
 };
 
 struct MethodDef

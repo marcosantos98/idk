@@ -513,6 +513,67 @@ void parse_input(Project *project, String file_path, String input)
             {
                 logger.log_terr("ASSGIN IN Method: Not implemented yet!\n");
             }
+            else if (auto assign_arr_expr = dynamic_cast<const AssignArrayExpression *>(body_expr.get()))
+            {
+                AssignArrayDef def;
+                def.alias = assign_arr_expr->p_alias;
+
+                auto element_index_value = static_cast<const ValueExpression *>(assign_arr_expr->p_ele_index.get());
+
+                Value element_index;
+                element_index.raw = element_index_value->p_value;
+                element_index.type = element_index_value->p_type;
+
+                def.element_index = element_index;
+
+                MethodExpr assign_value_expr;
+
+                if (auto value_expr = dynamic_cast<const ValueExpression *>(assign_arr_expr->p_value.get()))
+                {
+                    Value assign_value;
+                    assign_value.raw = value_expr->p_value;
+                    assign_value.type = value_expr->p_type;
+
+                    MethodExpr method_var_def;
+                    method_var_def.type = MethodExprType::VAR;
+
+                    std::optional<std::tuple<VariableDef, StackVar>> var_def;
+
+                    for (auto method_exp : stack_vars)
+                    {
+                        if (method_exp.type == MethodExprType::ARRAY && std::get<0>(method_exp.var_def.value()).arg_name == def.alias)
+                        {
+                            var_def = method_exp.var_def;
+                            break;
+                        }
+                    }
+
+                    if (!var_def.has_value())
+                        logger.log_terr("Couldn't found array value with alias %s\n", def.alias.c_str());
+
+                    std::get<0>(var_def.value()).val = assign_value;
+
+                    if (element_index.type != ValueType::NUMBER && element_index.type != ValueType::VAR_REF)
+                        logger.log_terr("Array element requires VARIABLE OF NUMBER or NUMBER! Got %d\n", static_cast<int>(element_index.type));
+
+                    auto stack_mem = element_index.as_int() * NAVA::primitive_byte_sizes[std::get<0>(var_def.value()).class_name];
+                    std::get<1>(var_def.value()).stack_offset -= stack_mem;
+
+                    method_var_def.var_def = var_def;
+
+                    def.val = {method_var_def};
+                }
+                else
+                    logger.log_terr("TODO: %s not implement in array_assign parsing!\n", body_expr.get()->to_json()["type"].dump().c_str());
+
+                MethodExpr method_expr;
+                method_expr.type = MethodExprType::ASSIGN_ARRAY;
+                method_expr.assign_array_def = def;
+
+                stack_vars.emplace_back(method_expr);
+            }
+            else
+                logger.log_terr("TODO: %s not implement in method parsing!\n", body_expr.get()->to_json()["type"].dump().c_str());
         }
 
         def.method_expressions = stack_vars;

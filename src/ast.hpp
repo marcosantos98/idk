@@ -40,6 +40,7 @@ private:
     OwnPtr<ValueExpression> parse_bool_expression();
     OwnPtr<NewArrayExpression> parse_new_array_expression();
     OwnPtr<AssignExpression> parse_asign_expression();
+    OwnPtr<AssignArrayExpression> parse_assign_array_expression();
     OwnPtr<Expression> parse_parentisis_expression();
     OwnPtr<Expression> parse_binary_right_side(int, OwnPtr<Expression>);
     OwnPtr<VariableDeclarationExpression> parse_variable_declaration_expression(NAVA::Definition);
