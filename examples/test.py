@@ -37,7 +37,6 @@ def compile_and_run(path: str):
 
 def compile_run_all():
     nava_files = glob.glob("./**/*.nava", recursive=True)
-    TEST_CNT = len(nava_files)
     for nava in nava_files:
         if os.path.isdir(nava) :
             continue
