@@ -1,0 +1,9 @@
+import System;
+
+public class Array {
+
+    public static void main() {
+        int[] ages = new int[10];
+        System.exit(0);
+    }
+}
