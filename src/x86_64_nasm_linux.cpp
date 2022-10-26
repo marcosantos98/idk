@@ -72,7 +72,6 @@ void CodeGenerator::init(ClassDef class_def, MethodDef method_def)
 
 void CodeGenerator::generate()
 {
-
     Vec<String> obj_files = {};
 
     for (auto def : m_project->project_classes)
@@ -82,16 +81,83 @@ void CodeGenerator::generate()
 
         generator->log_tdbg("Generating for: %s\n", def.second.in_file.c_str());
 
+        String global_data_init;
+
         for (auto var : def.second.class_variables)
         {
-            if (var.class_name == "int")
+            if (var.type == VariableTypeDef::ARRAY)
             {
-                string_format(&m_ctx.text, "\t%s_%s dd %d\n", def.first.c_str(), var.arg_name.c_str(), var.val.as_int());
+                if (var.array.arr_size.type == ValueType::NUMBER)
+                {
+                    auto to_alloc = var.array.arr_size.as_int() * NAVA::primitive_byte_sizes[var.array.arr_type];
+                    string_format(&m_ctx.bss, "\t%s_%s resb %ld\n", def.first.c_str(), var.arg_name.c_str(), to_alloc);
+                }
+            }
+            else if (var.class_name == "int")
+            {
+                if (var.type == VariableTypeDef::BINOP)
+                {
+                    if (var.binop.left.type == ValueType::NUMBER && var.binop.rigth.type == ValueType::NUMBER)
+                    {
+                        if (var.binop.op == "+")
+                        {
+                            int val = var.binop.left.as_int() + var.binop.rigth.as_int();
+                            string_format(&m_ctx.data, "\t%s_%s dd %d\n", def.first.c_str(), var.arg_name.c_str(), val);
+                        }
+                    }
+                }
+                else if (var.type == VariableTypeDef::VAL && var.val.type == ValueType::VAR_REF)
+                {
+                    // fixme 22/10/25: Check on type checker
+                    string_format(&m_ctx.data, "\t%s_%s dd 0\n", def.first.c_str(), var.arg_name.c_str());
+                    string_format(&global_data_init, "\tmov eax, [%s_%s]\n", def.first.c_str(), var.val.raw.c_str());
+                    string_format(&global_data_init, "\tmov [%s_%s], eax\n", def.first.c_str(), var.arg_name.c_str());
+                }
+                else if (var.type == VariableTypeDef::VAL && var.val.type == ValueType::ARRAY_VAR_REF)
+                {
+                    // fixme 22/10/25: Check on type checker
+                    string_format(&m_ctx.data, "\t%s_%s dd 0\n", def.first.c_str(), var.arg_name.c_str());
+
+                    auto index = var.val.raw.substr(var.val.raw.find_first_of("[") + 1, var.val.raw.length() - var.val.raw.find_first_of("[") - 2);
+                    auto alias = var.val.raw.substr(0, var.val.raw.find_first_of("["));
+
+                    int i = stoi(index);
+                    auto to_alloc = i * NAVA::primitive_byte_sizes[var.array.arr_type];
+
+                    string_format(&global_data_init, "\tmov eax, [%s_%s-%ld]\n", def.first.c_str(), alias.c_str(), to_alloc);
+                    string_format(&global_data_init, "\tmov [%s_%s], eax\n", def.first.c_str(), var.arg_name.c_str());
+                }
+                else if (var.type == VariableTypeDef::VAL)
+                {
+                    string_format(&m_ctx.data, "\t%s_%s dd %d\n", def.first.c_str(), var.arg_name.c_str(), var.val.as_int());
+                }
+            }
+            else if (var.class_name == "String")
+            {
+                if (var.val.type == ValueType::STRING)
+                {
+                    // fixme 22/10/19: Write every byte instead of string literal
+                    string_format(&m_ctx.data, "\t%s_%s db \"%s\", 10\n", def.first.c_str(), var.arg_name.c_str(), var.val.as_str().c_str());
+                    string_format(&m_ctx.data, "\t%s_%s_sz equ $-%s_%s\n", def.first.c_str(), var.arg_name.c_str(), def.first.c_str(), var.arg_name.c_str());
+                }
             }
             else if (var.class_name == "double")
             {
                 string_format(&m_ctx.data, "\t%s dq %1f\n", var.arg_name.c_str(), var.val.as_double());
             }
+            else if (var.class_name == "boolean")
+            {
+                string_format(&m_ctx.data, "\t%s_%s dd %d\n", def.first.c_str(), var.arg_name.c_str(), var.val.as_bool());
+            }
+        }
+
+        if (!global_data_init.empty())
+        {
+            string_format(&m_ctx.text, "%s$_init_global_:\n", def.first.c_str());
+
+            m_ctx.text.append(global_data_init);
+
+            m_ctx.text += "\tret\n";
         }
 
         for (auto method : def.second.class_methods)
@@ -100,17 +166,22 @@ void CodeGenerator::generate()
             gen_method(method);
         }
 
+        generator->log_tok("%s\n", m_project->main_class.c_str());
+
         if (def.first == m_project->main_class)
         {
             m_ctx.text += "global _start\n";
             m_ctx.text += "_start:\n";
+            if (!global_data_init.empty())
+                string_format(&m_ctx.text, "\tcall %s$_init_global_\n", def.first.c_str());
+
             string_format(&m_ctx.text, "\tcall %s$main\n", def.first.c_str());
         }
 
         if (m_project->main_class.empty())
             generator->log_twarn("WARN: Couldn't find main class in %s\n", def.first.c_str());
 
-        auto output_asm = "" + m_ctx.global + m_ctx.ext + m_ctx.text + m_ctx.data;
+        auto output_asm = "" + m_ctx.global + m_ctx.ext + m_ctx.text + m_ctx.data + m_ctx.bss;
         auto path = m_project->root_path;
         auto build_path = std::filesystem::relative(path).append("build").string();
 
@@ -260,7 +331,7 @@ void CodeGenerator::gen_stack_var(MethodExpr method_expr)
         mov_mX_immX(&m_ctx.text, "boolean", std::get<1>(method_expr.var_def.value()).stack_offset, val);
     }
     else
-        generator->log_terr("ValueType not implemented: %d\n", static_cast<int>(std::get<0>(method_expr.var_def.value()).val.type));
+        generator->log_tdbg("ValueType not implemented: %d\n", static_cast<int>(std::get<0>(method_expr.var_def.value()).val.type));
 }
 
 void CodeGenerator::gen_binop(MethodExpr stack)
@@ -321,7 +392,8 @@ void CodeGenerator::gen_funcall(MethodExpr method_expr)
     if (method_expr.func_def.call_name == "asm")
     {
         // fixme 22/10/06: Check for only one arg or maybe parse this individually instead of working as a call expression.
-        m_ctx.text += method_expr.func_def.args[0].as_str();
+        generator->log_tdbg("Reimplement this!\n");
+        m_ctx.text += method_expr.func_def.args[0].val.as_str();
     }
     else
     {
@@ -329,7 +401,8 @@ void CodeGenerator::gen_funcall(MethodExpr method_expr)
         {
             for (auto &arg : method_expr.func_def.args)
             {
-                gen_value_type(arg);
+                generator->log_tdbg("Reimplement this!\n");
+                gen_value_type(arg.val);
             }
 
             m_ctx.current_arg_index = 0;
@@ -381,7 +454,7 @@ void CodeGenerator::gen_if(MethodExpr method_expr)
         {
             if (m_global_var_alias.contains(method_expr.if_def.cond.val.raw))
             {
-                generator->log_terr("%s Not implemented yet\n", __FILE__);
+                generator->log_tdbg("%s Not implemented yet\n", __FILE__);
             }
             else if (m_stack_var_alias.contains(method_expr.if_def.cond.val.raw))
             {
@@ -445,10 +518,12 @@ void CodeGenerator::gen_while(MethodExpr method_expr)
 void CodeGenerator::gen_assign(MethodExpr method_expr)
 {
     if (method_expr.type == MethodExprType::ASSIGN)
-        gen_type(method_expr.assign_def.val[0]);
+        // fixme 22/10/25: This is probably broken now.
+        gen_value_type(method_expr.assign_def.val);
     else if (method_expr.type == MethodExprType::ASSIGN_ARRAY)
     {
-        gen_type(method_expr.assign_array_def.val[0]);
+        // fixme 22/10/25: This is probably broken now
+        gen_value_type(method_expr.assign_array_def.val);
     }
 }
 
@@ -546,8 +621,8 @@ void CodeGenerator::gen_value_type(Value val)
         mov_reg_immX(&m_ctx.text, "boolean", arg_reg_32[m_ctx.current_arg_index++].c_str(), val);
         break;
     default:
-        generator->log_terr("fixme 22/10/19: 402 Not Implemented %d!\n", static_cast<int>(val.type));
-        exit(1);
+        generator->log_tdbg("fixme 22/10/19: 402 Not Implemented %d!\n", static_cast<int>(val.type));
+        // exit(1);
         break;
     }
 }

@@ -19,4 +19,5 @@ add_executable(nava
     ./src/log.cpp
     ./src/json.hpp
     ./src/argparser.hpp
+    ./src/project_parser.cpp
     )
