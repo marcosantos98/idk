@@ -35,17 +35,6 @@ struct Value
     }
 };
 
-struct VariableDef
-{
-    bool is_public = true;
-    bool is_static = false;
-    bool is_final = false;
-    bool is_protected = false;
-    String class_name;
-    String arg_name;
-    Value val;
-};
-
 struct ArgumentDef
 {
     bool is_final = false;
@@ -73,20 +62,17 @@ enum class MethodExprType : int
 
 struct MethodExpr;
 
-struct ArrayDef {
+struct ArrayDef
+{
     String arr_type;
     Value arr_size;
+    size_t alloc_sz = 0;
 };
 
-struct AssignArrayDef {
-    String alias;
-    Value element_index;
-    Vec<MethodExpr> val;
-};
-
-struct AssignDef {
-    String alias;
-    Vec<MethodExpr> val;
+enum class AssignDefType
+{
+    VAL,
+    BINOP,
 };
 
 struct BinopDef
@@ -94,6 +80,23 @@ struct BinopDef
     Value left;
     Value rigth;
     String op;
+};
+
+struct AssignArrayDef
+{
+    String alias;
+    Value element_index;
+    Value val;
+    BinopDef binop;
+    AssignDefType type;
+};
+
+struct AssignDef
+{
+    AssignDefType type;
+    String alias;
+    Value val;
+    BinopDef binop;
 };
 
 enum class CondType
@@ -122,18 +125,53 @@ struct IfDef
     Vec<MethodExpr> body_expr;
 };
 
+enum class FunArgType
+{
+    VAL,
+    BINOP,
+};
+
+struct FunArg
+{
+    Value val;
+    BinopDef binop;
+    FunArgType type;
+};
+
 struct FuncallDef
 {
-    Vec<Value> args;
+    Vec<FunArg> args;
     String ret_type;
     String call_name;
+};
+
+enum class VariableTypeDef
+{
+    VAL,
+    BINOP,
+    ARRAY,
+};
+
+struct VariableDef
+{
+    bool is_public = true;
+    bool is_static = false;
+    bool is_final = false;
+    bool is_protected = false;
+    String class_name;
+    String arg_name;
+    Value val;
+    BinopDef binop;
+    ArrayDef array;
+    VariableTypeDef type;
+    StackVar stack_info;
 };
 
 struct MethodExpr
 {
     bool is_final = false;
     MethodExprType type;
-    std::optional<std::tuple<VariableDef, StackVar>> var_def;
+    VariableDef var_def;
     FuncallDef func_def;
     BinopDef binop_def;
     IfDef if_def;
@@ -152,7 +190,7 @@ struct MethodDef
     String method_name;
     Vec<ArgumentDef> args;
     Vec<MethodExpr> method_expressions;
-    size_t stack_offset;
+    size_t stack_offset = 0;
 };
 
 struct ClassDef
@@ -166,7 +204,26 @@ struct ClassDef
 struct Project
 {
     String main_class = "";
-    String root_path;
+    String root_path = ".";
     bool single_file = false;
     Map<String, ClassDef> project_classes = {};
 };
+
+static inline String val_type_to_str(ValueType type)
+{
+    switch (type)
+    {
+    case ValueType::NUMBER:
+        return "NUMBER";
+    case ValueType::STRING:
+        return "STRING";
+    case ValueType::BOOL:
+        return "BOOL";
+    case ValueType::VAR_REF:
+        return "VAR_REF";
+    case ValueType::ARRAY_VAR_REF:
+        return "ARRAY_VAR_REF";
+    default:
+        printf("Not implemented! %s\n", __FUNCTION__);
+    }
+}
