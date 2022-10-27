@@ -22,7 +22,7 @@ private:
 
     Log *logger = new Log("Project");
 
-    VariableDef parse_variable_ast(VariableDeclarationExpression const *);
+    VariableDef parse_variable_ast(VariableDeclarationExpression const *, bool);
     MethodDef parse_method_ast(MethodExpression const *);
     BinopDef parse_binop_ast(BinaryExpression const *);
     Value parse_value_ast(ValueExpression const *);
@@ -34,6 +34,11 @@ private:
     WhileDef parse_while_ast(WhileExpression const*);
 
     MethodExpr parse_as_method_expr(Expression const*, String);
+
+    struct Context {
+        MethodDef* current_method;
+    };
+    Context m_ctx;
 
     template <typename T, typename V>
     inline bool is(V const *val)

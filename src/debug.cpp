@@ -83,20 +83,20 @@ void print_var_array(VariableDef var_def, int tabs_cnt)
 
 void print_expr_var(MethodExpr var, int tabs_cnt)
 {
-    if (std::get<0>(var.var_def.value()).type == VariableTypeDef::VAL)
+    if (var.var_def.type == VariableTypeDef::VAL)
     {
-        print_var_val(std::get<0>(var.var_def.value()), tabs_cnt);
-        print_stack(std::get<1>(var.var_def.value()), tabs_cnt + 1);
+        print_var_val(var.var_def, tabs_cnt);
+        print_stack(var.var_def.stack_info, tabs_cnt + 1);
     }
-    else if (std::get<0>(var.var_def.value()).type == VariableTypeDef::BINOP)
+    else if (var.var_def.type == VariableTypeDef::BINOP)
     {
-        print_var_binop(std::get<0>(var.var_def.value()), tabs_cnt);
-        print_stack(std::get<1>(var.var_def.value()), tabs_cnt + 1);
+        print_var_binop(var.var_def, tabs_cnt);
+        print_stack(var.var_def.stack_info, tabs_cnt + 1);
     }
-    else if (std::get<0>(var.var_def.value()).type == VariableTypeDef::ARRAY)
+    else if (var.var_def.type == VariableTypeDef::ARRAY)
     {
-        print_var_array(std::get<0>(var.var_def.value()), tabs_cnt);
-        print_stack(std::get<1>(var.var_def.value()), tabs_cnt + 1);
+        print_var_array(var.var_def, tabs_cnt);
+        print_stack(var.var_def.stack_info, tabs_cnt + 1);
     }
 }
 

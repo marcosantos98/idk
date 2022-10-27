@@ -14,14 +14,24 @@ void ProjectParser::parse(String file_path, String source_file)
 
     // fixme 22/10/25: Parse imports
 
-    ClassDef class_def;
+    String package = "";
+    if (ast_root.get()->p_package.get() != nullptr)
+        package = static_cast<const PackageExpression *>(ast_root.get()->p_package.get())->p_path;
 
+    String classpath = package + "$" + ast_root.get()->p_definition.class_name;
+
+    logger->log_tdbg("%s in %s. Classpath: %s\n", ast_root.get()->p_definition.class_name.c_str(), package.length() == 0 ? "root" : package.c_str(), classpath.c_str());
+
+    if (m_project->project_classes.contains(classpath))
+        logger->log_err("Classpath already defined!\n");
+
+    ClassDef class_def;
     Vec<VariableDef> class_vars = {};
     Vec<MethodDef> class_methods = {};
 
     for (auto &variable : ast_root.get()->p_class_variables)
     {
-        auto variable_def = parse_variable_ast(as<VariableDeclarationExpression>(variable.get()));
+        auto variable_def = parse_variable_ast(as<VariableDeclarationExpression>(variable.get()), false);
         m_global_variables.emplace_back(variable_def);
         class_vars.emplace_back(variable_def);
     }
@@ -34,10 +44,10 @@ void ProjectParser::parse(String file_path, String source_file)
     class_def.imports = {};
     class_def.in_file = file_path;
 
-    m_project->project_classes["$Test"] = class_def;
+    m_project->project_classes[classpath] = class_def;
 }
 
-VariableDef ProjectParser::parse_variable_ast(VariableDeclarationExpression const *variable_declaration)
+VariableDef ProjectParser::parse_variable_ast(VariableDeclarationExpression const *variable_declaration, bool stack)
 {
     VariableDef def;
 
@@ -47,6 +57,18 @@ VariableDef ProjectParser::parse_variable_ast(VariableDeclarationExpression cons
     def.is_static = variable_declaration->p_definition.mod.is_static;
     def.is_public = variable_declaration->p_definition.mod.is_public;
     def.is_protected = false; // fixme 22/10/25: Protected
+
+    if (stack)
+    {
+        size_t type_offset = NAVA::primitive_byte_sizes[def.class_name];
+        m_ctx.current_method->stack_offset += type_offset;
+
+        StackVar var;
+        var.alias = def.arg_name;
+        var.stack_offset = m_ctx.current_method->stack_offset;
+
+        def.stack_info = var;
+    }
 
     if (is<BinaryExpression>(variable_declaration->p_value.get()))
     {
@@ -60,8 +82,15 @@ VariableDef ProjectParser::parse_variable_ast(VariableDeclarationExpression cons
     }
     else if (is<NewArrayExpression>(variable_declaration->p_value.get()))
     {
+        def.class_name = def.class_name.substr(0, def.class_name.find_first_of("["));
+
         def.type = VariableTypeDef::ARRAY;
         def.array = parse_array_ast(as<NewArrayExpression>(variable_declaration->p_value.get()));
+        if(stack)
+        {
+            m_ctx.current_method->stack_offset += def.array.alloc_sz;
+            def.stack_info.stack_offset = m_ctx.current_method->stack_offset;
+        }
     }
     else
         logger->log_terr("Parse variable expression not implement yet!\n");
@@ -72,13 +101,25 @@ VariableDef ProjectParser::parse_variable_ast(VariableDeclarationExpression cons
 MethodDef ProjectParser::parse_method_ast(MethodExpression const *method_expr)
 {
     MethodDef def;
+    m_ctx.current_method = &def;
     def.is_public = method_expr->p_definition.mod.is_public;
     def.is_abstract = method_expr->p_definition.mod.is_abstract;
     def.is_static = method_expr->p_definition.mod.is_static;
     def.method_name = method_expr->p_definition.arg_name;
     def.return_type = method_expr->p_definition.class_name;
 
+    Vec<ArgumentDef> args = {};
     Vec<MethodExpr> body_expressions = {};
+
+    for (auto arg : method_expr->p_args)
+    {
+        ArgumentDef def;
+        def.arg_name = arg.arg_name;
+        def.class_name = arg.class_name;
+        def.is_final = arg.mod.is_final;
+
+        args.emplace_back(def);
+    }
 
     for (auto &body_expr : method_expr->p_body)
     {
@@ -86,6 +127,7 @@ MethodDef ProjectParser::parse_method_ast(MethodExpression const *method_expr)
     }
 
     def.method_expressions = body_expressions;
+    def.args = args;
 
     return def;
 }
@@ -313,14 +355,17 @@ MethodExpr ProjectParser::parse_as_method_expr(Expression const *expr, String ty
 
     if (is<VariableDeclarationExpression>(expr))
     {
-        auto var_def = parse_variable_ast(as<VariableDeclarationExpression>(expr));
+        auto var_def = parse_variable_ast(as<VariableDeclarationExpression>(expr), true);
         method_expr.type = MethodExprType::VAR;
 
         StackVar stack_var;
         stack_var.alias = var_def.arg_name;
-        stack_var.stack_offset = 0;
+        // fixme 22/10/27: Set offset
+        stack_var.stack_offset = m_ctx.current_method->stack_offset;
 
-        method_expr.var_def = std::make_tuple(var_def, stack_var);
+        var_def.stack_info = stack_var;
+
+        method_expr.var_def = var_def;
     }
     else if (is<CallExpression>(expr))
     {
@@ -333,6 +378,9 @@ MethodExpr ProjectParser::parse_as_method_expr(Expression const *expr, String ty
     {
         auto assign_def = parse_assign_ast(as<AssignExpression>(expr));
         method_expr.type = MethodExprType::ASSIGN;
+
+        VariableDef var_def;
+        var_def.stack_info.alias = assign_def.alias;
 
         method_expr.assign_def = assign_def;
     }

@@ -49,6 +49,7 @@ String string_format(const std::string &format, Args... args)
 
 void CodeGenerator::init(ClassDef class_def, MethodDef method_def)
 {
+    m_ctx.current_method = method_def;
     m_global_var_alias = {};
     m_stack_var_alias = {};
 
@@ -57,15 +58,15 @@ void CodeGenerator::init(ClassDef class_def, MethodDef method_def)
 
     for (auto expr : method_def.method_expressions)
     {
-        if (expr.var_def.has_value())
-            m_stack_var_alias[std::get<1>(expr.var_def.value()).alias] = expr.var_def.value();
+        if (expr.type == MethodExprType::VAR)
+            m_stack_var_alias[expr.var_def.arg_name] = expr.var_def;
 
         // fixme 22/10/21: This isn't that good
         else if (expr.type == MethodExprType::WHILE)
         {
             for (auto while_expr : expr.while_def.body_expr)
-                if (while_expr.var_def.has_value())
-                    m_stack_var_alias[std::get<1>(while_expr.var_def.value()).alias] = while_expr.var_def.value();
+                if (while_expr.type == MethodExprType::VAR)
+                    m_stack_var_alias[while_expr.var_def.arg_name] = while_expr.var_def;
         }
     }
 }
@@ -175,6 +176,7 @@ void CodeGenerator::generate()
             if (!global_data_init.empty())
                 string_format(&m_ctx.text, "\tcall %s$_init_global_\n", def.first.c_str());
 
+            // m_ctx.text += "\tpop rdi\n";
             string_format(&m_ctx.text, "\tcall %s$main\n", def.first.c_str());
         }
 
@@ -286,7 +288,11 @@ void CodeGenerator::gen_method(MethodDef method)
     //                 This should be calculated with the args size
     string_format(&m_ctx.text, "\tsub rsp, %ld\n", method.stack_offset + 10);
 
-    // fixme 22/10/14: pop args from stack
+    // for (auto arg : method.args)
+    // {
+    //     mov_mX_reg(&m_ctx.text, arg.class_name, 0, arg_reg_32[m_ctx.current_arg_index++].c_str());
+    // }
+    // m_ctx.current_arg_index = 0;
 
     for (auto method_expression : method.method_expressions)
     {
@@ -302,36 +308,46 @@ void CodeGenerator::gen_method(MethodDef method)
 
 void CodeGenerator::gen_stack_var(MethodExpr method_expr)
 {
-    if (std::get<0>(method_expr.var_def.value()).val.type == ValueType::NUMBER)
+    if (method_expr.var_def.val.type == ValueType::NUMBER)
     {
         mov_mX_immX(&m_ctx.text,
-                    std::get<0>(method_expr.var_def.value()).class_name,
-                    std::get<1>(method_expr.var_def.value()).stack_offset,
-                    std::get<0>(method_expr.var_def.value()).val);
+                    method_expr.var_def.class_name,
+                    method_expr.var_def.stack_info.stack_offset,
+                    method_expr.var_def.val);
     }
-    else if (std::get<0>(method_expr.var_def.value()).val.type == ValueType::VAR_REF)
+    else if (method_expr.var_def.type == VariableTypeDef::BINOP)
     {
-        auto val = std::get<0>(method_expr.var_def.value()).val;
+        MethodExpr expr;
+        expr.type = MethodExprType::VAR;
+        expr.binop_def = method_expr.var_def.binop;
+        expr.var_def.stack_info.stack_offset = method_expr.var_def.stack_info.stack_offset;
+        expr.var_def.class_name = method_expr.var_def.class_name;
+        gen_binop(expr);
+    }
+    else if (method_expr.var_def.val.type == ValueType::VAR_REF)
+    {
+        auto val = method_expr.var_def.val;
         if (m_global_var_alias.contains(val.raw))
             generator->log_terr("StackVar with reference to global variable not implemented yet!\n");
         // mov_mX_data(&m_ctx.text, arg_reg_32[m_ctx.current_arg_index++].c_str(), (m_ctx.current_class_name + "_" + val.raw));
         else if (m_stack_var_alias.contains(val.raw))
         {
-            auto primitive = std::get<0>(m_stack_var_alias[val.raw]).class_name;
-            auto offset = std::get<1>(m_stack_var_alias[val.raw]).stack_offset;
+            auto primitive = m_stack_var_alias[val.raw].class_name;
+            auto offset = m_stack_var_alias[val.raw].stack_info.stack_offset;
+
             mov_reg_mX(&m_ctx.text, primitive, offset, "eax");
-            mov_mX_reg(&m_ctx.text, std::get<0>(method_expr.var_def.value()).class_name, std::get<1>(method_expr.var_def.value()).stack_offset, "eax");
+            mov_mX_reg(&m_ctx.text, method_expr.var_def.class_name, method_expr.var_def.stack_info.stack_offset, "eax");
         }
         else
             generator->log_terr("Variable not found! %s\n", val.raw.c_str());
     }
-    else if (std::get<0>(method_expr.var_def.value()).val.type == ValueType::BOOL)
+    else if (method_expr.var_def.val.type == ValueType::BOOL)
     {
-        auto val = std::get<0>(method_expr.var_def.value()).val;
-        mov_mX_immX(&m_ctx.text, "boolean", std::get<1>(method_expr.var_def.value()).stack_offset, val);
+        auto val = method_expr.var_def.val;
+        mov_mX_immX(&m_ctx.text, "boolean", method_expr.var_def.stack_info.stack_offset, val);
     }
     else
-        generator->log_tdbg("ValueType not implemented: %d\n", static_cast<int>(std::get<0>(method_expr.var_def.value()).val.type));
+        generator->log_tdbg("ValueType not implemented: %d\n", static_cast<int>(method_expr.var_def.val.type));
 }
 
 void CodeGenerator::gen_binop(MethodExpr stack)
@@ -382,8 +398,8 @@ void CodeGenerator::gen_binop(MethodExpr stack)
         m_ctx.text += "\tmov eax, edx\n";
     }
 
-    if (stack.var_def.has_value())
-        mov_mX_reg(&m_ctx.text, std::get<0>(stack.var_def.value()).class_name, std::get<1>(stack.var_def.value()).stack_offset, "eax");
+    if (stack.type == MethodExprType::VAR)
+        mov_mX_reg(&m_ctx.text, stack.var_def.class_name, stack.var_def.stack_info.stack_offset, "eax");
 }
 
 void CodeGenerator::gen_funcall(MethodExpr method_expr)
@@ -392,7 +408,6 @@ void CodeGenerator::gen_funcall(MethodExpr method_expr)
     if (method_expr.func_def.call_name == "asm")
     {
         // fixme 22/10/06: Check for only one arg or maybe parse this individually instead of working as a call expression.
-        generator->log_tdbg("Reimplement this!\n");
         m_ctx.text += method_expr.func_def.args[0].val.as_str();
     }
     else
@@ -401,7 +416,6 @@ void CodeGenerator::gen_funcall(MethodExpr method_expr)
         {
             for (auto &arg : method_expr.func_def.args)
             {
-                generator->log_tdbg("Reimplement this!\n");
                 gen_value_type(arg.val);
             }
 
@@ -458,8 +472,8 @@ void CodeGenerator::gen_if(MethodExpr method_expr)
             }
             else if (m_stack_var_alias.contains(method_expr.if_def.cond.val.raw))
             {
-                auto primitive = std::get<0>(m_stack_var_alias[method_expr.if_def.cond.val.raw]).class_name;
-                auto offset = std::get<1>(m_stack_var_alias[method_expr.if_def.cond.val.raw]).stack_offset;
+                auto primitive = m_stack_var_alias[method_expr.if_def.cond.val.raw].class_name;
+                auto offset = m_stack_var_alias[method_expr.if_def.cond.val.raw].stack_info.stack_offset;
                 mov_reg_mX(&m_ctx.text, primitive, offset, "eax");
                 m_ctx.text += "\tcmp eax, 1\n";
                 string_format(&m_ctx.text, "\tjne .JPL_%ld\n", jmp_cnt);
@@ -518,12 +532,55 @@ void CodeGenerator::gen_while(MethodExpr method_expr)
 void CodeGenerator::gen_assign(MethodExpr method_expr)
 {
     if (method_expr.type == MethodExprType::ASSIGN)
+    {
+        if (method_expr.assign_def.type == AssignDefType::BINOP)
+        {
+            MethodExpr expr;
+            // fixme 22/10/27: Find array dont assume that is in current stack.
+            expr.var_def = m_stack_var_alias[method_expr.assign_def.alias];
+            expr.type = MethodExprType::VAR;
+            expr.binop_def = method_expr.assign_def.binop;
+            gen_binop(expr);
+        }
+        else if (method_expr.assign_def.type == AssignDefType::VAL)
+        {
+            MethodExpr expr;
+            expr.var_def.val.type = ValueType::VAR_REF;
+            expr.var_def.val = method_expr.assign_def.val;
+            expr.var_def.class_name = m_stack_var_alias[method_expr.assign_def.alias].class_name;
+            expr.var_def.stack_info.stack_offset = m_stack_var_alias[method_expr.assign_def.alias].stack_info.stack_offset;
+            gen_stack_var(expr);
+        }
         // fixme 22/10/25: This is probably broken now.
-        gen_value_type(method_expr.assign_def.val);
+        // gen_type(method_expr);
+    }
     else if (method_expr.type == MethodExprType::ASSIGN_ARRAY)
     {
-        // fixme 22/10/25: This is probably broken now
-        gen_value_type(method_expr.assign_array_def.val);
+        auto offset = m_stack_var_alias[method_expr.assign_array_def.alias].stack_info.stack_offset;
+        printf("%ld\n", offset);
+
+        auto primitive = m_stack_var_alias[method_expr.assign_array_def.alias].class_name;
+        printf("%s\n", primitive.substr(0, primitive.find_first_of("[")).c_str());
+
+        if (method_expr.assign_array_def.type == AssignDefType::VAL)
+        {
+            MethodExpr expr;
+            expr.var_def.val.type = ValueType::NUMBER;
+            expr.var_def.val = method_expr.assign_array_def.val;
+            expr.var_def.class_name = m_stack_var_alias[method_expr.assign_array_def.alias].class_name;
+            expr.var_def.stack_info.stack_offset = m_stack_var_alias[method_expr.assign_def.alias].stack_info.stack_offset;
+
+            if (method_expr.assign_array_def.element_index.type == ValueType::NUMBER)
+            {
+                auto off = offset - method_expr.assign_array_def.element_index.as_int() * NAVA::primitive_byte_sizes[expr.var_def.class_name];
+printf("%ld", off);
+                expr.var_def.stack_info.stack_offset = off;
+
+                gen_stack_var(expr);
+            }
+        }
+
+        // gen_type(method_expr);
     }
 }
 
@@ -533,7 +590,7 @@ void CodeGenerator::gen_array(MethodExpr method_expr)
     val.raw = "0";
     val.type = ValueType::NUMBER;
 
-    mov_mX_immX(&m_ctx.text, std::get<0>(method_expr.var_def.value()).class_name, std::get<1>(method_expr.var_def.value()).stack_offset, val);
+    mov_mX_immX(&m_ctx.text, method_expr.var_def.class_name, method_expr.var_def.stack_info.stack_offset, val);
 }
 
 void CodeGenerator::gen_type(MethodExpr method_expr)
@@ -576,12 +633,30 @@ void CodeGenerator::gen_var_ref(Value val)
             mov_reg_data(&m_ctx.text, arg_reg_32[m_ctx.current_arg_index++].c_str(), (m_ctx.current_class_name + "_" + val.raw));
         else if (m_stack_var_alias.contains(val.raw))
         {
-            auto primitive = std::get<0>(m_stack_var_alias[val.raw]).class_name;
-            auto offset = std::get<1>(m_stack_var_alias[val.raw]).stack_offset;
+            auto primitive = m_stack_var_alias[val.raw].class_name;
+            auto offset = m_stack_var_alias[val.raw].stack_info.stack_offset;
             mov_reg_mX(&m_ctx.text, primitive, offset, arg_reg_32[m_ctx.current_arg_index++].c_str());
         }
         else
-            generator->log_terr("Variable not found! %s\n", val.raw.c_str());
+        {
+            bool found;
+            ArgumentDef argument;
+            for (auto arg : m_ctx.current_method.args)
+            {
+                if (arg.arg_name == val.raw)
+                {
+                    argument = arg;
+                    found = true;
+                    break;
+                }
+            }
+
+            if (!found)
+                generator->log_terr("%s, Variable not found! %s\n", val.raw.c_str(), __FUNCTION__);
+
+            // fixme 22/10/27: Stack offset
+            mov_reg_mX(&m_ctx.text, argument.class_name, 0, arg_reg_32[m_ctx.current_arg_index++].c_str());
+        }
     }
     else
     {
@@ -592,8 +667,8 @@ void CodeGenerator::gen_var_ref(Value val)
             mov_reg_data(&m_ctx.text, arg_reg_32[m_ctx.current_arg_index++].c_str(), (m_ctx.current_class_name + "_" + name));
         else if (m_stack_var_alias.contains(name))
         {
-            auto primitive = std::get<0>(m_stack_var_alias[name]).class_name;
-            auto offset = std::get<1>(m_stack_var_alias[name]).stack_offset - (stoi(el) * NAVA::primitive_byte_sizes[primitive]);
+            auto primitive = m_stack_var_alias[name].class_name;
+            auto offset = m_stack_var_alias[name].stack_info.stack_offset - (stoi(el) * NAVA::primitive_byte_sizes[primitive]);
             mov_reg_mX(&m_ctx.text, primitive, offset, arg_reg_32[m_ctx.current_arg_index++].c_str());
         }
         else
@@ -638,7 +713,7 @@ String CodeGenerator::as_val_or_mem(Value val)
         if (m_global_var_alias.contains(val.raw))
             return string_format("%s_%s", m_ctx.current_class_name.c_str(), val.raw.c_str());
         else if (m_stack_var_alias.contains(val.raw))
-            return string_format("dword [rbp-%d]", std::get<1>(m_stack_var_alias[val.raw]).stack_offset);
+            return string_format("dword [rbp-%d]", m_stack_var_alias[val.raw].stack_info.stack_offset);
         else
             generator->log_terr("as_val_or_mem: Var not found %s\n", val.raw.c_str());
     }

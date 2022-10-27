@@ -164,13 +164,14 @@ struct VariableDef
     BinopDef binop;
     ArrayDef array;
     VariableTypeDef type;
+    StackVar stack_info;
 };
 
 struct MethodExpr
 {
     bool is_final = false;
     MethodExprType type;
-    std::optional<std::tuple<VariableDef, StackVar>> var_def;
+    VariableDef var_def;
     FuncallDef func_def;
     BinopDef binop_def;
     IfDef if_def;
@@ -189,7 +190,7 @@ struct MethodDef
     String method_name;
     Vec<ArgumentDef> args;
     Vec<MethodExpr> method_expressions;
-    size_t stack_offset;
+    size_t stack_offset = 0;
 };
 
 struct ClassDef

@@ -28,7 +28,7 @@ private:
     Log *linker = new Log("LD");
 
     Map<String, VariableDef> m_global_var_alias = {};
-    Map<String, std::tuple<VariableDef, StackVar>> m_stack_var_alias = {};
+    Map<String, VariableDef> m_stack_var_alias = {};
 
     Vec<String> arg_reg_64 = {
         "rdi",
@@ -59,6 +59,7 @@ private:
         ClassDef current_class;
         size_t current_arg_index = 0;
         Vec<String> externs = {};
+        MethodDef current_method;
     };
 
     GenContext m_ctx;
