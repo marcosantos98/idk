@@ -18,21 +18,27 @@ def compile(path: str):
 def compile_and_run(path: str):
     compile(path)
     parts = path.split('/');
-    s = "./main > " + '/'.join(parts[0:-1]) + '/' + parts[len(parts)-1].split(".")[0] + ".temp"
-    subprocess.call(["sh", "-c", s])
-    if exists('/'.join(parts[0:-1]) + '/' + parts[len(parts)-1].split(".")[0] + ".txt"):
-        if open('/'.join(parts[0:-1]) + '/' + parts[len(parts)-1].split(".")[0] + ".temp", "r").read() != open('/'.join(parts[0:-1]) + '/' + parts[len(parts)-1].split(".")[0] + ".txt", "r").read():
+    cpath = ""
+    if len(parts) == 1:
+        cpath = path.split(".")[0]
+    else :
+        cpath = '/'.join(parts[0:-1]) + '/' + parts[len(parts)-1].split(".")[0]
+    s = "./main > " + cpath;
+    subprocess.call(["sh", "-c", s + ".temp"])
+    if exists(cpath + ".txt"):
+        if open(cpath + ".temp", "r").read() != open(cpath + ".txt", "r").read():
             print("\u001b[31mFailed test:\u001b[0m %s" % path)
             print("Expected:")
-            print(open('/'.join(parts[0:-1]) + '/' + parts[len(parts)-1].split(".")[0] + ".txt", "r").read())
+            print(open(cpath + ".txt", "r").read())
             print("Got:")
-            print(open('/'.join(parts[0:-1]) + '/' + parts[len(parts)-1].split(".")[0] + ".temp", "r").read())
+            print(open(cpath + ".temp", "r").read())
             FAILED.append(path);
         else:
             print("\u001b[32mPassed test:\u001b[0m %s" % path)
             PASSED.append(path);
-        os.remove('/'.join(parts[0:-1]) + '/' + parts[len(parts)-1].split(".")[0] + ".temp")
+        os.remove(cpath + ".temp")
     else:
+        print("Test not recorded: %s" % path)
         NOT_REC.append(path)
 
 def compile_run_all():
