@@ -73,6 +73,9 @@ def compile_record_all():
             compile_and_record(nava)
 
 if __name__ == "__main__":
+    if not exists(IDK):
+        print("Nava executable not found. Did you build it first? Not found %s" % IDK)
+        exit(1)
     assert len(sys.argv) > 1, "Not enought arguments."
     if(sys.argv[1] == "-a"):
         compile_run_all()
