@@ -166,9 +166,7 @@ void CodeGenerator::generate()
             init(def.second, method);
             gen_method(method);
         }
-
-        generator->log_tok("%s\n", m_project->main_class.c_str());
-
+        
         if (def.first == m_project->main_class)
         {
             m_ctx.text += "global _start\n";
