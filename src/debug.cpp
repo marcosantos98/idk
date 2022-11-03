@@ -245,10 +245,15 @@ void print_project(Project const &project)
         printf("\n    ====> Methods <====\n\n");
         for (auto method_def : clazz.second.class_methods)
         {
-            printf("    MethodName:%s, RetType:%s ArgCount:%ld\n",
+            printf("    MethodName:%s, RetType:%s ArgCount:%ld Args: ",
                    method_def.method_name.c_str(),
                    method_def.return_type.c_str(),
                    method_def.args.size());
+            for(auto arg : method_def.args)
+            {
+                printf("%s %s, ", arg.class_name.c_str(), arg.arg_name.c_str());
+            }
+            printf("\n");
             for (auto var : method_def.method_expressions)
             {
                 print_expr_type(var, 2);
